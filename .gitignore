@@ -1,0 +1,35 @@
+# Virtual environment
+.venv/
+venv/
+
+# Internal documentation
+__DOC__/
+__NEW__/
+
+# Python cache
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# PyCharm
+.idea/
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env

@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simplibs-file"
+version = "0.1.0"
+description = "Safe file handling: read, write, copy, move, back up and inspect files — atomically, with deterministic defaults and structured errors — as plain functions, composable rules and pipeline actions."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+keywords = [
+    "file",
+    "files",
+    "file-system",
+    "filesystem",
+    "io",
+    "read",
+    "write",
+    "atomic",
+    "atomic-write",
+    "safe-write",
+    "encoding",
+    "json",
+    "backup",
+    "simplibs",
+    "simplibs-file",
+    "developer-tools",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Filesystems",
+]
+dependencies = [
+    "simplibs-path>=0.1.1",
+    "simplibs-exception>=1.1.4",
+    "simplibs-rules>=0.4.0",
+    "simplibs-validate>=0.3.2",
+    "simplibs-actions>=0.2.2",
+]
+
+[[project.authors]]
+name = "Dalibor Sova (Sudip2708)"
+email = "daliborsova@seznam.cz"
+
+[project.urls]
+Homepage = "https://github.com/simplibs/simplibs-file"
+Repository = "https://github.com/simplibs/simplibs-file"
+Issues = "https://github.com/simplibs/simplibs-file/issues"
+Changelog = "https://github.com/simplibs/simplibs-file/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-subtests>=0.11",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v"
+
+[tool.setuptools.packages.find]
+where = ["src"]
