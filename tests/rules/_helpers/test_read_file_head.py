@@ -3,8 +3,6 @@ from pathlib import Path
 import pytest
 from simplibs.file.rules._helpers import read_file_head
 
-_CANNOT_REVOKE_ACCESS = os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0)
-
 
 def _head(path, *, max_bytes=1000, encoding="utf-8"):
     return read_file_head(path, max_bytes=max_bytes, encoding=encoding)
@@ -125,7 +123,7 @@ def test_read_file_head_arguments_after_the_path_are_keyword_only(tmp_path) -> N
         read_file_head(tmp_path / "a.txt", 100, "utf-8")
 
 
-@pytest.mark.skipif(_CANNOT_REVOKE_ACCESS, reason="Permissions cannot be revoked here (Windows or root).")
+@pytest.mark.revocable_permissions
 def test_read_file_head_is_none_for_an_unreadable_file(tmp_path) -> None:
     target = tmp_path / "a.txt"
     target.write_bytes(b"x")

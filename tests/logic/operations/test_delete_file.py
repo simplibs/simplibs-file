@@ -15,13 +15,6 @@ def _file(path: Path, data: bytes = b"content") -> Path:
     return path
 
 
-def _symlink_or_skip(link: Path, target: Path, *, directory: bool = False) -> None:
-    try:
-        link.symlink_to(target, target_is_directory=directory)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
-
-
 # ----------------------------------------------------------------------
 # Deleting
 # ----------------------------------------------------------------------
@@ -77,11 +70,11 @@ def test_delete_file_leaves_other_files_alone(tmp_path: Path) -> None:
 # Entry semantics
 # ----------------------------------------------------------------------
 
-def test_delete_file_symlink_is_deleted_and_its_target_survives(tmp_path: Path) -> None:
+def test_delete_file_symlink_is_deleted_and_its_target_survives(tmp_path: Path, symlink_or_skip) -> None:
     """The old version deleted the TARGET and left the dangling link behind."""
     real = _file(tmp_path / "real.txt", b"precious")
     link = tmp_path / "link.txt"
-    _symlink_or_skip(link, real)
+    symlink_or_skip(link, real)
 
     result = delete_file(link)
 
@@ -90,23 +83,23 @@ def test_delete_file_symlink_is_deleted_and_its_target_survives(tmp_path: Path) 
     assert result == tmp_path.resolve() / "link.txt"
 
 
-def test_delete_file_dangling_symlink_can_be_deleted(tmp_path: Path) -> None:
+def test_delete_file_dangling_symlink_can_be_deleted(tmp_path: Path, symlink_or_skip) -> None:
     """A link to nothing is a perfectly deletable entry."""
     link = tmp_path / "dangling.txt"
-    _symlink_or_skip(link, tmp_path / "gone.txt")
+    symlink_or_skip(link, tmp_path / "gone.txt")
 
     delete_file(link)
 
     assert not link.is_symlink()
 
 
-def test_delete_file_symlink_to_a_folder_removes_only_the_link(tmp_path: Path) -> None:
+def test_delete_file_symlink_to_a_folder_removes_only_the_link(tmp_path: Path, symlink_or_skip) -> None:
     """The folder behind the link and its content stay."""
     folder = tmp_path / "folder"
     folder.mkdir()
     _file(folder / "inside.txt")
     link = tmp_path / "link_to_folder"
-    _symlink_or_skip(link, folder, directory=True)
+    symlink_or_skip(link, folder, directory=True)
 
     delete_file(link)
 
@@ -242,11 +235,11 @@ def test_delete_file_force_that_still_fails_is_an_access_error(tmp_path: Path, m
     assert file.exists()
 
 
-def test_delete_file_force_does_not_touch_the_flag_of_a_symlink_target(tmp_path: Path, monkeypatch) -> None:
+def test_delete_file_force_does_not_touch_the_flag_of_a_symlink_target(tmp_path: Path, monkeypatch, symlink_or_skip) -> None:
     """The flag of a symlink's TARGET is never touched."""
     real = _file(tmp_path / "real.txt")
     link = tmp_path / "link.txt"
-    _symlink_or_skip(link, real)
+    symlink_or_skip(link, real)
     chmod_calls: list[Path] = []
     monkeypatch.setattr(
         MODULE, "os", SimpleNamespace(path=os.path, chmod=lambda path, mode: chmod_calls.append(path)),
@@ -271,7 +264,7 @@ def test_delete_file_force_makes_the_file_writable_before_the_retry(tmp_path: Pa
     assert modes == [stat.S_IWRITE]
 
 
-@pytest.mark.skipif(os.name != "nt", reason="read-only files cannot be deleted on Windows")
+@pytest.mark.windows_only("read-only files cannot be deleted on Windows")
 def test_delete_file_read_only_file_on_windows(tmp_path: Path) -> None:
     """The real thing: without force it fails, with force it is deleted."""
     file = _file(tmp_path / "a.txt")

@@ -57,15 +57,12 @@ def test_move_across_devices_keeps_the_modification_time(tmp_path: Path) -> None
     assert int((tmp_path / "moved.bin").stat().st_mtime) == 1_600_000_000
 
 
-def test_move_across_devices_refuses_a_symlink_and_changes_nothing(tmp_path: Path) -> None:
+def test_move_across_devices_refuses_a_symlink_and_changes_nothing(tmp_path: Path, symlink_or_skip) -> None:
     """Silently turning a link into a regular file would change what it is."""
     real = tmp_path / "real.bin"
     real.write_bytes(b"content")
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     with pytest.raises(OSError, match="symbolic link"):
         move_across_devices(link, tmp_path / "moved.bin")

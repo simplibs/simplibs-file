@@ -217,7 +217,21 @@ def test_safe_file_writer_second_exit_does_nothing(tmp_path: Path) -> None:
     assert _drafts(tmp_path) == []
 
 
-@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
+@pytest.mark.posix_only("umask")
+def test_safe_file_writer_new_file_honours_the_umask(tmp_path: Path) -> None:
+    """A file that did not exist gets the permissions any new file would get — not a private 0o600."""
+    target = tmp_path / "new.txt"
+    previous = os.umask(0o027)
+    try:
+        with SafeFileWriter(target) as handle:
+            handle.write("x")
+    finally:
+        os.umask(previous)
+
+    assert stat.S_IMODE(target.stat().st_mode) == 0o640
+
+
+@pytest.mark.posix_only("permission bits")
 def test_safe_file_writer_keeps_the_mode_of_the_replaced_file(tmp_path: Path) -> None:
     """A 0o600 file stays 0o600 after being replaced."""
     target = tmp_path / "secret.txt"
@@ -230,15 +244,12 @@ def test_safe_file_writer_keeps_the_mode_of_the_replaced_file(tmp_path: Path) ->
     assert stat.S_IMODE(target.stat().st_mode) == 0o600
 
 
-def test_safe_file_writer_writes_through_a_symlink_and_keeps_the_link(tmp_path: Path) -> None:
+def test_safe_file_writer_writes_through_a_symlink_and_keeps_the_link(tmp_path: Path, symlink_or_skip) -> None:
     """The link is resolved: the real file is replaced, the link stays a link."""
     real = tmp_path / "real.txt"
     real.write_text("old", encoding="utf-8")
     link = tmp_path / "link.txt"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     with SafeFileWriter(link) as handle:
         handle.write("new")

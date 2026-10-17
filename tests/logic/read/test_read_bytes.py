@@ -49,15 +49,12 @@ def test_read_bytes_large_file(tmp_path: Path) -> None:
     assert read_bytes(file) == data
 
 
-def test_read_bytes_follows_symlink(tmp_path: Path) -> None:
+def test_read_bytes_follows_symlink(tmp_path: Path, symlink_or_skip) -> None:
     """The CONTENT behind a link is read."""
     real = tmp_path / "real.bin"
     real.write_bytes(b"content")
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     assert read_bytes(link) == b"content"
 

@@ -81,14 +81,11 @@ def test_size_is_a_directory_and_a_missing_path_fail(tmp_path) -> None:
     assert rule.is_valid(tmp_path / "missing") is False
 
 
-def test_size_is_follows_a_symlink_to_a_file(tmp_path) -> None:
+def test_size_is_follows_a_symlink_to_a_file(tmp_path, symlink_or_skip) -> None:
     target = tmp_path / "target.bin"
     target.write_bytes(b"12345")
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("Creating symlinks is not permitted here.")
+    symlink_or_skip(link, target)
     assert SizeIs(GreaterThan(4)).is_valid(link) is True
 
 

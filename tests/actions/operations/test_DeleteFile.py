@@ -52,26 +52,20 @@ def test_delete_file_does_not_touch_a_directory(tmp_path) -> None:
     assert folder.is_dir()
 
 
-def test_delete_file_deletes_a_symlink_but_not_its_target(tmp_path) -> None:
+def test_delete_file_deletes_a_symlink_but_not_its_target(tmp_path, symlink_or_skip) -> None:
     target = tmp_path / "target.txt"
     target.write_text("x")
     link = tmp_path / "link.txt"
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("Creating symlinks is not permitted here.")
+    symlink_or_skip(link, target)
     result = DeleteFile()(link)
     assert result == tmp_path.resolve() / "link.txt"
     assert not os.path.lexists(link)
     assert target.read_text() == "x"
 
 
-def test_delete_file_can_delete_a_dangling_symlink(tmp_path) -> None:
+def test_delete_file_can_delete_a_dangling_symlink(tmp_path, symlink_or_skip) -> None:
     link = tmp_path / "dangling.txt"
-    try:
-        link.symlink_to(tmp_path / "nowhere.txt")
-    except (OSError, NotImplementedError):
-        pytest.skip("Creating symlinks is not permitted here.")
+    symlink_or_skip(link, tmp_path / "nowhere.txt")
     DeleteFile()(link)
     assert not os.path.lexists(link)
 

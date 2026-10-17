@@ -14,13 +14,6 @@ def _file(path: Path, text: str = "x") -> Path:
     return path
 
 
-def _symlink_or_skip(link: Path, target: Path) -> None:
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
-
-
 # ----------------------------------------------------------------------
 # Acceptable destinations
 # ----------------------------------------------------------------------
@@ -105,14 +98,11 @@ def test_prepare_destination_existing_destination_without_overwrite_is_refused(t
 
 @pytest.mark.parametrize("operation", ["copy", "move"])
 @pytest.mark.parametrize("overwrite", [True, False])
-def test_prepare_destination_hard_link_is_the_same_file(tmp_path: Path, operation, overwrite) -> None:
+def test_prepare_destination_hard_link_is_the_same_file(tmp_path: Path, operation, overwrite, hardlink_or_skip) -> None:
     """Two names, one file: a copy onto it would truncate the source."""
     source = _file(tmp_path / "source.txt")
     destination = tmp_path / "hardlink.txt"
-    try:
-        os.link(source, destination)
-    except (OSError, NotImplementedError):
-        pytest.skip("hard links are not available here")
+    hardlink_or_skip(source, destination)
 
     with pytest.raises(ParamError) as info:
         prepare_destination(source, destination, operation, overwrite=overwrite)
@@ -120,11 +110,11 @@ def test_prepare_destination_hard_link_is_the_same_file(tmp_path: Path, operatio
     assert info.value.error_name == f"FILE_{operation.upper()}_SAME_FILE"
 
 
-def test_prepare_destination_symlink_pointing_at_the_source_is_the_same_file(tmp_path: Path) -> None:
+def test_prepare_destination_symlink_pointing_at_the_source_is_the_same_file(tmp_path: Path, symlink_or_skip) -> None:
     """A link to the source is another spelling of it."""
     source = _file(tmp_path / "source.txt")
     link = tmp_path / "link.txt"
-    _symlink_or_skip(link, source)
+    symlink_or_skip(link, source)
 
     with pytest.raises(ParamError):
         prepare_destination(source, link, "copy", overwrite=True)
@@ -134,32 +124,32 @@ def test_prepare_destination_symlink_pointing_at_the_source_is_the_same_file(tmp
 # Dangling symlinks and symlinks to folders
 # ----------------------------------------------------------------------
 
-def test_prepare_destination_dangling_symlink_counts_as_existing(tmp_path: Path) -> None:
+def test_prepare_destination_dangling_symlink_counts_as_existing(tmp_path: Path, symlink_or_skip) -> None:
     """A plain exists() would call it free and the replace would silently remove the link."""
     source = _file(tmp_path / "source.txt")
     link = tmp_path / "dangling.txt"
-    _symlink_or_skip(link, tmp_path / "gone.txt")
+    symlink_or_skip(link, tmp_path / "gone.txt")
 
     with pytest.raises(AlreadyExistsError):
         prepare_destination(source, link, "copy", overwrite=False)
 
 
-def test_prepare_destination_dangling_symlink_can_be_replaced_with_overwrite(tmp_path: Path) -> None:
+def test_prepare_destination_dangling_symlink_can_be_replaced_with_overwrite(tmp_path: Path, symlink_or_skip) -> None:
     """overwrite=True accepts replacing the link entry."""
     source = _file(tmp_path / "source.txt")
     link = tmp_path / "dangling.txt"
-    _symlink_or_skip(link, tmp_path / "gone.txt")
+    symlink_or_skip(link, tmp_path / "gone.txt")
 
     assert prepare_destination(source, link, "copy", overwrite=True) is None
 
 
-def test_prepare_destination_symlink_to_a_folder_is_an_entry_not_a_folder(tmp_path: Path) -> None:
+def test_prepare_destination_symlink_to_a_folder_is_an_entry_not_a_folder(tmp_path: Path, symlink_or_skip) -> None:
     """The link itself can be replaced; only a real directory is refused."""
     source = _file(tmp_path / "source.txt")
     folder = tmp_path / "folder"
     folder.mkdir()
     link = tmp_path / "link_to_folder"
-    _symlink_or_skip(link, folder)
+    symlink_or_skip(link, folder)
 
     assert prepare_destination(source, link, "move", overwrite=True) is None
 
@@ -200,7 +190,7 @@ def test_prepare_destination_move_to_a_different_name_of_the_same_file_is_refuse
     assert info.value.error_name == "FILE_MOVE_SAME_FILE"
 
 
-@pytest.mark.skipif(os.name != "nt", reason="case-insensitive filesystem semantics of Windows")
+@pytest.mark.windows_only("case-insensitive filesystem semantics of Windows")
 def test_prepare_destination_case_only_move_on_windows_is_allowed(tmp_path: Path) -> None:
     """The real thing: `a.txt` -> `A.txt` on NTFS. (`Path('a.txt') == Path('A.txt')` is True there.)"""
     source = _file(tmp_path / "a.txt")
@@ -209,7 +199,7 @@ def test_prepare_destination_case_only_move_on_windows_is_allowed(tmp_path: Path
     assert prepare_destination(source, destination, "move", overwrite=False) is None
 
 
-@pytest.mark.skipif(os.name != "nt", reason="case-insensitive filesystem semantics of Windows")
+@pytest.mark.windows_only("case-insensitive filesystem semantics of Windows")
 def test_prepare_destination_case_only_copy_on_windows_is_refused(tmp_path: Path) -> None:
     """On NTFS a copy `a.txt` -> `A.txt` is a copy onto itself."""
     source = _file(tmp_path / "a.txt")

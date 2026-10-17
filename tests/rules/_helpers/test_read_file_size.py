@@ -3,8 +3,6 @@ from pathlib import Path
 import pytest
 from simplibs.file.rules._helpers import read_file_size
 
-_CANNOT_REVOKE_ACCESS = os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0)
-
 
 def test_read_file_size_returns_the_size_in_bytes(tmp_path) -> None:
     target = tmp_path / "a.bin"
@@ -38,23 +36,17 @@ def test_read_file_size_is_none_for_a_path_with_a_null_byte() -> None:
     assert read_file_size(Path("a\0b")) is None
 
 
-def test_read_file_size_follows_a_symlink_to_a_file(tmp_path) -> None:
+def test_read_file_size_follows_a_symlink_to_a_file(tmp_path, symlink_or_skip) -> None:
     target = tmp_path / "target.bin"
     target.write_bytes(b"123")
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("Creating symlinks is not permitted here.")
+    symlink_or_skip(link, target)
     assert read_file_size(link) == 3
 
 
-def test_read_file_size_is_none_for_a_dangling_symlink(tmp_path) -> None:
+def test_read_file_size_is_none_for_a_dangling_symlink(tmp_path, symlink_or_skip) -> None:
     link = tmp_path / "dangling.bin"
-    try:
-        link.symlink_to(tmp_path / "nowhere.bin")
-    except (OSError, NotImplementedError):
-        pytest.skip("Creating symlinks is not permitted here.")
+    symlink_or_skip(link, tmp_path / "nowhere.bin")
     assert read_file_size(link) is None
 
 
@@ -79,7 +71,7 @@ def test_read_file_size_does_not_hide_other_exceptions(tmp_path, monkeypatch) ->
         read_file_size(tmp_path)
 
 
-@pytest.mark.skipif(_CANNOT_REVOKE_ACCESS, reason="Permissions cannot be revoked here (Windows or root).")
+@pytest.mark.revocable_permissions
 def test_read_file_size_is_none_behind_a_folder_that_cannot_be_entered(tmp_path) -> None:
     folder = tmp_path / "locked"
     folder.mkdir()

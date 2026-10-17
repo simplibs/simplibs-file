@@ -33,14 +33,11 @@ def test_is_text_file_accepts_string_path(tmp_path: Path) -> None:
     assert is_text_file(str(file)) is True
 
 
-def test_is_text_file_follows_symlink(tmp_path: Path) -> None:
+def test_is_text_file_follows_symlink(tmp_path: Path, symlink_or_skip) -> None:
     """A symlink to a text file is text."""
     real = _write(tmp_path / "real.txt", b"hello")
     link = tmp_path / "link.txt"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     assert is_text_file(link) is True
 

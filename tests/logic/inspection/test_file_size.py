@@ -48,15 +48,12 @@ def test_file_size_returns_int(tmp_path: Path) -> None:
     assert type(file_size(file)) is int
 
 
-def test_file_size_of_symlink_is_size_of_target(tmp_path: Path) -> None:
+def test_file_size_of_symlink_is_size_of_target(tmp_path: Path, symlink_or_skip) -> None:
     """A symlink is followed, so it reports the target's size."""
     real = tmp_path / "real.bin"
     real.write_bytes(b"x" * 7)
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     assert file_size(link) == 7
 

@@ -9,7 +9,7 @@ from simplibs.file.logic.operations._helpers import copy_atomically
 
 MODULE = importlib.import_module("simplibs.file.logic.operations._helpers.copy_atomically")
 
-_POSIX_ONLY = pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
+_POSIX_ONLY = pytest.mark.posix_only("permission bits")
 
 
 def _drafts(folder: Path) -> list[Path]:
@@ -78,15 +78,12 @@ def test_copy_atomically_large_file(tmp_path: Path) -> None:
     assert (tmp_path / "copy.bin").read_bytes() == data
 
 
-def test_copy_atomically_copies_the_content_behind_a_symlink(tmp_path: Path) -> None:
+def test_copy_atomically_copies_the_content_behind_a_symlink(tmp_path: Path, symlink_or_skip) -> None:
     """A link as the source gives a regular file with the link's content."""
     real = tmp_path / "real.bin"
     real.write_bytes(b"content")
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     copy_atomically(link, tmp_path / "copy.bin")
 

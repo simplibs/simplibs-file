@@ -21,13 +21,6 @@ def _drafts(folder: Path) -> list[Path]:
     return sorted(folder.glob(".*.draft"))
 
 
-def _symlink_or_skip(link: Path, target: Path) -> None:
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
-
-
 def _cross_device_replace(source, destination, **kwargs):
     """What os.replace does between two devices."""
     raise OSError(errno.EXDEV, "Invalid cross-device link")
@@ -123,11 +116,11 @@ def test_move_file_overwrite_replaces_an_existing_destination(tmp_path: Path) ->
 # Entry semantics
 # ----------------------------------------------------------------------
 
-def test_move_file_moves_a_symlink_as_a_link(tmp_path: Path) -> None:
+def test_move_file_moves_a_symlink_as_a_link(tmp_path: Path, symlink_or_skip) -> None:
     """The old version moved the TARGET."""
     real = _file(tmp_path / "real.txt", b"precious")
     link = tmp_path / "link.txt"
-    _symlink_or_skip(link, real)
+    symlink_or_skip(link, real)
 
     move_file(link, tmp_path / "moved_link.txt")
 
@@ -136,10 +129,10 @@ def test_move_file_moves_a_symlink_as_a_link(tmp_path: Path) -> None:
     assert real.read_bytes() == b"precious"
 
 
-def test_move_file_moves_a_dangling_symlink(tmp_path: Path) -> None:
+def test_move_file_moves_a_dangling_symlink(tmp_path: Path, symlink_or_skip) -> None:
     """A link to nothing is a perfectly movable entry."""
     link = tmp_path / "dangling.txt"
-    _symlink_or_skip(link, tmp_path / "gone.txt")
+    symlink_or_skip(link, tmp_path / "gone.txt")
 
     move_file(link, tmp_path / "moved.txt")
 
@@ -215,14 +208,11 @@ def test_move_file_onto_itself_is_refused(tmp_path: Path) -> None:
     assert source.read_bytes() == b"precious"
 
 
-def test_move_file_onto_a_hard_link_of_itself_is_refused(tmp_path: Path) -> None:
+def test_move_file_onto_a_hard_link_of_itself_is_refused(tmp_path: Path, hardlink_or_skip) -> None:
     """Another name of the same file is the same file."""
     source = _file(tmp_path / "a.txt", b"precious")
     alias = tmp_path / "alias.txt"
-    try:
-        os.link(source, alias)
-    except (OSError, NotImplementedError):
-        pytest.skip("hard links are not available here")
+    hardlink_or_skip(source, alias)
 
     with pytest.raises(ParamError):
         move_file(source, alias, overwrite=True)
@@ -230,7 +220,7 @@ def test_move_file_onto_a_hard_link_of_itself_is_refused(tmp_path: Path) -> None
     assert source.read_bytes() == b"precious"
 
 
-@pytest.mark.skipif(os.name != "nt", reason="case-insensitive filesystem semantics of Windows")
+@pytest.mark.windows_only("case-insensitive filesystem semantics of Windows")
 def test_move_file_case_only_rename_on_windows(tmp_path: Path) -> None:
     """`a.txt` -> `A.txt` is the same file on NTFS, yet a valid rename."""
     source = _file(tmp_path / "a.txt", b"data")
@@ -298,11 +288,11 @@ def test_move_file_cross_device_failed_copy_keeps_the_source(tmp_path: Path, mon
     assert not (tmp_path / "b.txt").exists()
 
 
-def test_move_file_cross_device_symlink_is_refused_with_a_card(tmp_path: Path, monkeypatch) -> None:
+def test_move_file_cross_device_symlink_is_refused_with_a_card(tmp_path: Path, monkeypatch, symlink_or_skip) -> None:
     """A link is not silently turned into a regular file on another device."""
     real = _file(tmp_path / "real.txt", b"precious")
     link = tmp_path / "link.txt"
-    _symlink_or_skip(link, real)
+    symlink_or_skip(link, real)
     monkeypatch.setattr(MODULE, "replace_with_retry", _cross_device_replace)
 
     with pytest.raises(AccessError) as info:

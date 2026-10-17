@@ -84,15 +84,12 @@ def test_write_bytes_large_data_roundtrip(tmp_path: Path) -> None:
     assert target.read_bytes() == data
 
 
-def test_write_bytes_through_a_symlink_replaces_the_real_file(tmp_path: Path) -> None:
+def test_write_bytes_through_a_symlink_replaces_the_real_file(tmp_path: Path, symlink_or_skip) -> None:
     """The link stays a link; the file behind it is replaced."""
     real = tmp_path / "real.bin"
     real.write_bytes(b"old")
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     write_bytes(link, b"new")
 

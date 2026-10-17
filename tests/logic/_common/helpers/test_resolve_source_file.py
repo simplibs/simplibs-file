@@ -4,14 +4,6 @@ from simplibs.exception import AccessError, NotFoundError, StateError
 from simplibs.file.logic._common.helpers import resolve_source_file
 
 
-def _symlink_or_skip(link: Path, target: Path) -> None:
-    """Create a symlink, or skip the test where the platform does not allow it."""
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
-
-
 # ----------------------------------------------------------------------
 # Success
 # ----------------------------------------------------------------------
@@ -46,12 +38,12 @@ def test_resolve_source_file_makes_relative_path_absolute(tmp_path: Path, monkey
     assert result == (tmp_path / "a.txt").resolve()
 
 
-def test_resolve_source_file_follows_symlink_to_file(tmp_path: Path) -> None:
+def test_resolve_source_file_follows_symlink_to_file(tmp_path: Path, symlink_or_skip) -> None:
     """The CONTENT is wanted, so a symlink to a file resolves to its target."""
     real = tmp_path / "real.txt"
     real.write_text("x", encoding="utf-8")
     link = tmp_path / "link.txt"
-    _symlink_or_skip(link, real)
+    symlink_or_skip(link, real)
 
     assert resolve_source_file(link, "read") == real.resolve()
 
@@ -83,10 +75,10 @@ def test_resolve_source_file_directory_raises_state_error(tmp_path: Path, operat
     assert isinstance(info.value, IsADirectoryError)
 
 
-def test_resolve_source_file_dangling_symlink_is_not_found(tmp_path: Path) -> None:
+def test_resolve_source_file_dangling_symlink_is_not_found(tmp_path: Path, symlink_or_skip) -> None:
     """A link whose target is gone has no content to work with."""
     link = tmp_path / "dangling.txt"
-    _symlink_or_skip(link, tmp_path / "gone.txt")
+    symlink_or_skip(link, tmp_path / "gone.txt")
 
     with pytest.raises(NotFoundError):
         resolve_source_file(link, "read")

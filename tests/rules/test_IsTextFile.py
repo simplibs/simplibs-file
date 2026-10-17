@@ -8,8 +8,6 @@ from simplibs.path.logic.scanners import collect_paths
 from simplibs.path.rules import HasSuffix
 from simplibs.rules.testing import assert_rule_contract
 
-_CANNOT_REVOKE_ACCESS = os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0)
-
 
 def test_is_text_file_contract(subtests, tmp_path) -> None:
     """Verify the complete contract of the IsTextFile rule."""
@@ -130,7 +128,7 @@ def test_is_text_file_a_directory_and_a_missing_path_are_not_text_files(tmp_path
     assert rule.is_valid(tmp_path / "missing") is False
 
 
-@pytest.mark.skipif(_CANNOT_REVOKE_ACCESS, reason="Permissions cannot be revoked here (Windows or root).")
+@pytest.mark.revocable_permissions
 def test_is_text_file_an_unreadable_file_is_not_a_text_file(tmp_path) -> None:
     target = tmp_path / "a.txt"
     target.write_text("x")

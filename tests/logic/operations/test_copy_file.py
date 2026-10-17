@@ -8,7 +8,7 @@ from simplibs.file.logic.operations import copy_file
 
 MODULE = importlib.import_module("simplibs.file.logic.operations.copy_file")
 
-_POSIX_ONLY = pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
+_POSIX_ONLY = pytest.mark.posix_only("permission bits")
 
 
 def _file(path: Path, data: bytes = b"content") -> Path:
@@ -18,13 +18,6 @@ def _file(path: Path, data: bytes = b"content") -> Path:
 
 def _drafts(folder: Path) -> list[Path]:
     return sorted(folder.glob(".*.draft"))
-
-
-def _symlink_or_skip(link: Path, target: Path) -> None:
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
 
 
 # ----------------------------------------------------------------------
@@ -99,11 +92,11 @@ def test_copy_file_relative_paths_resolve_against_the_working_directory(tmp_path
     assert result == (tmp_path / "copy.bin").resolve()
 
 
-def test_copy_file_copies_the_content_behind_a_symlink(tmp_path: Path) -> None:
+def test_copy_file_copies_the_content_behind_a_symlink(tmp_path: Path, symlink_or_skip) -> None:
     """The CONTENT is copied to where the destination path leads."""
     real = _file(tmp_path / "real.bin", b"behind the link")
     link = tmp_path / "link.bin"
-    _symlink_or_skip(link, real)
+    symlink_or_skip(link, real)
 
     copy_file(link, tmp_path / "copy.bin")
 
@@ -163,12 +156,12 @@ def test_copy_file_overwrite_replaces_an_existing_destination(tmp_path: Path) ->
     assert _drafts(tmp_path) == []
 
 
-def test_copy_file_dangling_symlink_destination_creates_the_file_where_the_link_points(tmp_path: Path) -> None:
+def test_copy_file_dangling_symlink_destination_creates_the_file_where_the_link_points(tmp_path: Path, symlink_or_skip) -> None:
     """Content semantics: the destination is normalized, so the dangling link leads to a free path."""
     source = _file(tmp_path / "source.bin", b"data")
     missing = tmp_path / "gone.bin"
     link = tmp_path / "dangling.bin"
-    _symlink_or_skip(link, missing)
+    symlink_or_skip(link, missing)
 
     result = copy_file(source, link)
 
@@ -217,14 +210,11 @@ def test_copy_file_onto_itself_is_refused_and_keeps_the_content(tmp_path: Path) 
     assert source.read_bytes() == b"precious"
 
 
-def test_copy_file_onto_a_hard_link_of_itself_is_refused(tmp_path: Path) -> None:
+def test_copy_file_onto_a_hard_link_of_itself_is_refused(tmp_path: Path, hardlink_or_skip) -> None:
     """Another name of the same file is the same file."""
     source = _file(tmp_path / "source.bin", b"precious")
     alias = tmp_path / "alias.bin"
-    try:
-        os.link(source, alias)
-    except (OSError, NotImplementedError):
-        pytest.skip("hard links are not available here")
+    hardlink_or_skip(source, alias)
 
     with pytest.raises(ParamError):
         copy_file(source, alias, overwrite=True)

@@ -8,7 +8,7 @@ from simplibs.file.logic._common.helpers import commit_draft
 
 MODULE = importlib.import_module("simplibs.file.logic._common.helpers.commit_draft")
 
-_POSIX_ONLY = pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
+_POSIX_ONLY = pytest.mark.posix_only("permission bits")
 
 
 def _mode(path: Path) -> int:
@@ -253,3 +253,61 @@ def test_commit_draft_failing_folder_sync_is_ignored(tmp_path: Path, monkeypatch
     commit_draft(draft, target, sync=True)
 
     assert target.read_text(encoding="utf-8") == "new"
+
+
+# ----------------------------------------------------------------------
+# Windows: the read-only flag
+# ----------------------------------------------------------------------
+
+def _writable(path: Path) -> bool:
+    return bool(path.stat().st_mode & stat.S_IWRITE)
+
+
+@pytest.mark.windows_only("a read-only target blocks the swap")
+def test_commit_draft_read_only_target_fails_cleanly_and_keeps_both(tmp_path: Path) -> None:
+    """The swap fails with an OSError; the old file and the draft are both still there."""
+    target = tmp_path / "target.txt"
+    draft = tmp_path / ".target.txt.abcd1234.draft"
+    target.write_text("old", encoding="utf-8")
+    draft.write_text("new", encoding="utf-8")
+    os.chmod(target, stat.S_IREAD)
+
+    try:
+        with pytest.raises(PermissionError):
+            commit_draft(draft, target, attempts=2, delay=0)
+    finally:
+        os.chmod(target, stat.S_IREAD | stat.S_IWRITE)
+
+    assert target.read_text(encoding="utf-8") == "old"
+    assert draft.exists()
+
+
+@pytest.mark.windows_only("copymode carries the read-only flag")
+def test_commit_draft_keeps_the_writable_state_of_the_replaced_file_on_windows(tmp_path: Path) -> None:
+    """The Windows counterpart of the POSIX mode test: a writable file stays writable."""
+    target = tmp_path / "target.txt"
+    draft = tmp_path / ".target.txt.abcd1234.draft"
+    target.write_text("old", encoding="utf-8")
+    draft.write_text("new", encoding="utf-8")
+    os.chmod(draft, stat.S_IREAD)
+
+    commit_draft(draft, target)
+
+    assert target.read_text(encoding="utf-8") == "new"
+    assert _writable(target)
+
+
+@pytest.mark.windows_only("copymode carries the read-only flag")
+def test_commit_draft_keep_mode_false_keeps_the_read_only_flag_of_the_draft(tmp_path: Path) -> None:
+    """A copy carries the flag of its SOURCE, not of the file it replaces."""
+    target = tmp_path / "target.txt"
+    draft = tmp_path / ".target.txt.abcd1234.draft"
+    target.write_text("old", encoding="utf-8")
+    draft.write_text("new", encoding="utf-8")
+    os.chmod(draft, stat.S_IREAD)
+
+    try:
+        commit_draft(draft, target, keep_mode=False)
+        assert not _writable(target)
+    finally:
+        os.chmod(target, stat.S_IREAD | stat.S_IWRITE)

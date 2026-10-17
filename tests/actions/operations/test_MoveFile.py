@@ -83,14 +83,11 @@ def test_move_file_refuses_a_directory_at_the_destination(tmp_path) -> None:
     assert source.read_text() == "x"
 
 
-def test_move_file_moves_a_symlink_as_a_link(tmp_path) -> None:
+def test_move_file_moves_a_symlink_as_a_link(tmp_path, symlink_or_skip) -> None:
     target = tmp_path / "target.txt"
     target.write_text("x")
     link = tmp_path / "link.txt"
-    try:
-        link.symlink_to(target)
-    except (OSError, NotImplementedError):
-        pytest.skip("Creating symlinks is not permitted here.")
+    symlink_or_skip(link, target)
     moved = tmp_path / "moved_link.txt"
     MoveFile(destination=moved)(link)
     assert moved.is_symlink()

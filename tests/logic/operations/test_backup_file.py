@@ -10,7 +10,7 @@ from simplibs.file.logic.operations import backup_file
 MODULE = importlib.import_module("simplibs.file.logic.operations.backup_file")
 
 _STAMP = "20261013_142530"
-_POSIX_ONLY = pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
+_POSIX_ONLY = pytest.mark.posix_only("permission bits")
 
 
 @pytest.fixture(autouse=False)
@@ -119,16 +119,13 @@ def test_backup_file_returns_a_normalized_path_next_to_the_source(tmp_path: Path
     assert backup.parent == tmp_path.resolve()
 
 
-def test_backup_file_lives_next_to_the_real_file_not_the_symlink(tmp_path: Path, fixed_clock) -> None:
+def test_backup_file_lives_next_to_the_real_file_not_the_symlink(tmp_path: Path, fixed_clock, symlink_or_skip) -> None:
     """The source is normalized with symlinks resolved."""
     (tmp_path / "real").mkdir()
     (tmp_path / "links").mkdir()
     real = _file(tmp_path / "real" / "report.txt")
     link = tmp_path / "links" / "report.txt"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     backup = backup_file(link)
 

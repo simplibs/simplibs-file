@@ -89,14 +89,11 @@ def test_file_hash_accepts_string_path(tmp_path: Path) -> None:
     assert file_hash(str(file)) == file_hash(file)
 
 
-def test_file_hash_follows_symlink(tmp_path: Path) -> None:
+def test_file_hash_follows_symlink(tmp_path: Path, symlink_or_skip) -> None:
     """A symlink is followed, the CONTENT is hashed."""
     real = _write(tmp_path / "real.bin", b"content")
     link = tmp_path / "link.bin"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     assert file_hash(link) == file_hash(real)
 

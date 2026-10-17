@@ -68,26 +68,20 @@ def test_prepare_write_target_directory_is_a_state_error(tmp_path: Path, operati
     assert isinstance(info.value, IsADirectoryError)
 
 
-def test_prepare_write_target_follows_a_symlink_to_a_file(tmp_path: Path) -> None:
+def test_prepare_write_target_follows_a_symlink_to_a_file(tmp_path: Path, symlink_or_skip) -> None:
     """The CONTENT behind the link is written, so the real file is the target."""
     real = tmp_path / "real.txt"
     real.write_text("x", encoding="utf-8")
     link = tmp_path / "link.txt"
-    try:
-        link.symlink_to(real)
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, real)
 
     assert prepare_write_target(link, "write") == real.resolve()
 
 
-def test_prepare_write_target_dangling_symlink_targets_the_missing_file(tmp_path: Path) -> None:
+def test_prepare_write_target_dangling_symlink_targets_the_missing_file(tmp_path: Path, symlink_or_skip) -> None:
     """A link to nothing resolves to its (missing) target, which can then be created."""
     link = tmp_path / "link.txt"
-    try:
-        link.symlink_to(tmp_path / "later.txt")
-    except (OSError, NotImplementedError):
-        pytest.skip("symlinks are not available here")
+    symlink_or_skip(link, tmp_path / "later.txt")
 
     assert prepare_write_target(link, "write") == (tmp_path / "later.txt").resolve()
 
