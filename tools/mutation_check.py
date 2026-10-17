@@ -140,7 +140,15 @@ def run_mutation(mutation: Mutation, command: list[str]) -> str:
     try:
         path.write_bytes(_mutated_text(path, mutation))
         env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-        result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
+        result = subprocess.run(
+            command,
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
     finally:
         path.write_bytes(original_bytes)
         backup.unlink(missing_ok=True)
