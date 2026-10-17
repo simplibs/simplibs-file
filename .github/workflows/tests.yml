@@ -33,3 +33,5 @@ jobs:
       # -rs lists every skipped test with its reason, so a skip that should not be there is visible
       - name: Run the tests with coverage
         run: python -m pytest -q -rs --cov=simplibs.file --cov-branch --cov-report=term-missing
+
+
