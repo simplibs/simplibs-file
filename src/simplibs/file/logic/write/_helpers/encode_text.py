@@ -58,13 +58,4 @@ character leaves the target completely untouched.
 
 ## Plain Function, No `@validate_call`
 Internal helper — its callers are already validated.
-
-## TODO(test) — BOM Codecs and Append
-`"utf-8-sig"`, `"utf-16"` and `"utf-32"` emit a BOM on every `encode` call.
-For `append_text` that would put a BOM in the middle of an existing file.
-Handled in `append_text` (strip it when the target is non-empty) — verify there.
-
-## TODO(test) — Existing `\\r\\n`
-`newline="\\r\\n"` turns `"a\\r\\nb"` into `"a\\r\\r\\nb"` (same as `open()`).
-Documented, not "fixed".
 """

@@ -3,6 +3,7 @@ from .resolve_source_file import resolve_source_file
 from .commit_draft import commit_draft
 from .create_draft import create_draft
 from .delete_draft import delete_draft
+from .shorten_draft_name import shorten_draft_name
 
 _DESIGN_NOTES = """
 # File Common Internal Helpers Sub-Package
@@ -20,4 +21,5 @@ draft management and atomic file replacement.
 | `commit_draft`        | Function | Atomically replaces target with draft, handling locks and sync.      |
 | `create_draft`        | Function | Creates a unique, empty draft file next to the target.               |
 | `delete_draft`        | Function | Discards a draft file quietly without throwing errors.               |
+| `shorten_draft_name`  | Function | Shortens a long target name for its draft, by characters and bytes.  |
 """

@@ -69,9 +69,4 @@ add on every encode, when the file already has content.
 ## The Caller Owns Encoding Consistency
 Appending `cp1250` text to a `utf-8` file produces a mixed file; the library
 cannot tell what is already in it.
-
-## TODO(test)
-* Two appends with `utf-8-sig` -> exactly one BOM.
-* Unencodable character -> `ConversionError`, file untouched.
-* Append to a missing file creates it (with BOM for the BOM codecs).
 """

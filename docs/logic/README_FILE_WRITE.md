@@ -115,7 +115,7 @@ Writes bytes to a file — the **first core** every other writer is built on.
 **Parameters:**
 
 * `path` (*PathLike*): The target file. Its folder is created if missing.
-* `data` (*bytes*): The bytes to write. (`bytearray` is not accepted.)
+* `data` (*bytes | bytearray | memoryview*): The bytes to write. Text is not accepted — use [`write_text`](#write_text).
 * `overwrite` (*bool*, keyword-only, default `True`): If `False`, an existing file raises.
 * `use_draft` (*bool*, keyword-only, default `True`): Atomic draft-and-swap, or an in-place write.
 * `sync` (*bool*, keyword-only, default `False`): Force the data to stable storage.
@@ -134,6 +134,7 @@ Writes bytes to a file — the **first core** every other writer is built on.
 
 ```python
 write_bytes("out/blob.bin", b"\x00\xff")                   # -> <cwd>/out/blob.bin  (out/ is created)
+write_bytes("out/blob.bin", bytearray(b"\x00\xff"))        # a bytearray or a memoryview works as well
 write_bytes("out/blob.bin", b"new", overwrite=False)       # raises AlreadyExistsError
 write_bytes("out/big.bin", payload, use_draft=False)       # in place: faster, but a crash can leave a partial file
 write_bytes("out/key.bin", secret, sync=True)              # survives a power loss
@@ -189,7 +190,7 @@ Appends bytes to a file, creating it if it does not exist — the **second core 
 **Parameters:**
 
 * `path` (*PathLike*): The target file. Its folder is created if missing.
-* `data` (*bytes*): The bytes to add after the existing content.
+* `data` (*bytes | bytearray | memoryview*): The bytes to add after the existing content. Text is not accepted — use [`append_text`](#append_text).
 * `use_draft` (*bool*, keyword-only, default `False`): If `True`, the existing content is copied
   into a draft, the data appended there, and the draft swapped in — an interrupted append can
   never damage the old content, but the cost grows with the file size.
@@ -376,7 +377,7 @@ Writes a collection of lines to a file, one per line — the counterpart of
 **Parameters:**
 
 * `path` (*PathLike*): The target file. Its folder is created if missing.
-* `lines` (*Collection[str]*): The lines, in order. A list, tuple or set — **not** a generator.
+* `lines` (*TextCollection*): The lines, in order. A list, tuple or set — **not** a generator and **not** a bare string.
 * `encoding` (*EncodingName*, keyword-only, default `"utf-8"`), `errors` (*EncodingErrors*,
   default `"strict"`), `newline` (*NewlineMode*, default `"\n"`): As for `write_text`.
 * `trailing_newline` (*bool*, keyword-only, default `True`): If `True`, the last line is also
@@ -417,9 +418,10 @@ return write_text(path, text, encoding=encoding, errors=errors, newline=newline,
 
 **Lines carry no line ending.** An item that already ends with `"\n"` is written as it is, so the
 file gets an empty line after it; an item containing `"\n"` becomes more than one line. Items from
-`read_lines(keep_ends=True)` belong in `write_text("".join(...))` instead. It takes a `Collection`,
-not an `Iterable`: the lines are used twice (the join and the emptiness test), and `@validate_call`
-must be able to inspect them without consuming a generator.
+`read_lines(keep_ends=True)` belong in `write_text("".join(...))` instead. It takes a
+[`TextCollection`](README_FILE_ANNOTATIONS.md#textcollection), not an `Iterable`: the lines are used twice
+(the join and the emptiness test), and `@validate_call` must be able to inspect them without consuming a
+generator. A bare string is refused too — `"abc"` would otherwise become three lines.
 
 [▲ Back to top](#-table-of-contents)
 
@@ -433,11 +435,11 @@ extraction pipeline, where several extracted texts become one document.
 **Parameters:**
 
 * `path` (*PathLike*): The target file. Its folder is created if missing.
-* `parts` (*Collection[str]*): The fragments to join, in order.
+* `parts` (*TextCollection*): The fragments to join, in order. A bare string is rejected (`"abc"` would be joined as `a`, `b`, `c`).
 * `separator` (*str*, keyword-only, default `"\n"`): Placed between consecutive fragments.
 * `encoding`, `errors`, `newline`, `overwrite`, `use_draft`, `sync`: As for `write_text`.
 * `trailing_newline` (*bool*, keyword-only, default `False`): If `True`, one `"\n"` is added after
-  the last fragment.
+  the last fragment. Never added to an empty `parts`. Never added to an empty `parts`.
 
 **Returns:**
 
@@ -456,6 +458,7 @@ write_aggregated("out/ids.txt", ["12", "34"], separator="")           # file: '1
 write_aggregated("out/all.txt", ["a", "b"], trailing_newline=True)    # file: 'a\nb\n'
 
 write_aggregated("build/combined.md", [read_text(p) for p in collect_files("notes")])
+write_aggregated("out/empty.txt", [], trailing_newline=True)          # file: ''
 ```
 
 **Under the hood:**
@@ -463,7 +466,7 @@ write_aggregated("build/combined.md", [read_text(p) for p in collect_files("note
 ```python
 text = separator.join(parts)
 
-if trailing_newline:
+if trailing_newline and parts:  # an empty collection stays an empty file
     text += "\n"
 
 return write_text(path, text, encoding=encoding, errors=errors, newline=newline,
@@ -473,7 +476,7 @@ return write_text(path, text, encoding=encoding, errors=errors, newline=newline,
 Versus [`write_lines`](#write_lines): `write_lines` writes **one line per item** with line endings
 supplied by the library; `write_aggregated` joins arbitrary chunks with an arbitrary separator
 (`"\n\n"`, `"\n---\n"`, `""`). The exact join is the default — `trailing_newline` is opt-in,
-unlike in `write_lines`.
+unlike in `write_lines`. Never added to an empty `parts`.
 
 [▲ Back to top](#-table-of-contents)
 
@@ -507,7 +510,7 @@ Serializes a value to JSON and writes it to a file — the JSON face of [`write_
 **Raises:**
 
 * `ConversionError`: The value cannot be serialized (an unserializable type, a circular
-  reference, `NaN`, mixed-type keys with `sort_keys=True`) or encoded.
+  reference, nesting deeper than the recursion limit, `NaN`, mixed-type keys with `sort_keys=True`) or encoded.
 * `StateError`, `AlreadyExistsError`, `AccessError`: As for `write_bytes`.
 
 **Example usage:**

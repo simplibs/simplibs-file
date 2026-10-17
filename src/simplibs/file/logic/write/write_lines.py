@@ -1,9 +1,8 @@
-from collections.abc import Collection
 from pathlib import Path
 from simplibs.path import PathLike
 from simplibs.validate import validate_call
 # Outers
-from ...annotations import EncodingErrors, EncodingName, NewlineMode
+from ...annotations import EncodingErrors, EncodingName, NewlineMode, TextCollection
 # Inners
 from .write_text import write_text
 
@@ -11,7 +10,7 @@ from .write_text import write_text
 @validate_call
 def write_lines(
     path: PathLike,
-    lines: Collection[str],
+    lines: TextCollection,
     *,
     encoding: EncodingName = "utf-8",
     errors: EncodingErrors = "strict",
@@ -78,12 +77,9 @@ written with `write_text("".join(...))` instead.
 A text file conventionally ends with a line ending. `False` gives the exact
 `"\\n".join(lines)`.
 
-## `Collection`, Not `Iterable`
+## `TextCollection`, Not `Iterable` and Not a Bare `str`
 The lines are used twice (join + emptiness test) and `@validate_call` must be
-able to inspect them without consuming a generator.
-
-## TODO(test)
-* Empty collection with `trailing_newline=True` -> empty file.
-* Items containing `"\\n"` -> more lines than items (documented).
-* Round trip with `read_lines`.
+able to inspect them without consuming a generator. `TextCollection` is a
+`Collection[str]` that refuses a bare `str`: `write_lines(path, "abc")` is a
+forgotten list, not three lines.
 """

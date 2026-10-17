@@ -13,7 +13,7 @@ from ._helpers import prepare_write_target
 @validate_call
 def write_bytes(
     path: PathLike,
-    data: bytes,
+    data: bytes | bytearray | memoryview,
     *,
     overwrite: bool = True,
     use_draft: bool = True,
@@ -23,7 +23,7 @@ def write_bytes(
 
     Args:
         path: The target file. Its folder is created if missing.
-        data: The bytes to write.
+        data: The bytes to write (`bytes`, `bytearray` or `memoryview`).
         overwrite: If False, an existing file raises instead of being replaced.
         use_draft: If True (default), the data goes into a draft that replaces
             the target atomically, so a failure never damages the old file.
@@ -104,9 +104,8 @@ The existence check is a fail-fast message, not a guarantee: `os.replace`
 overwrites silently if the file appears in the last millisecond. Direct mode
 is exact (`"xb"`).
 
-## TODO(test)
-* Draft mode, `overwrite=False`, target appears in between (simulate) — documented behaviour.
-* A card from `SafeFileWriter` is not double-wrapped.
-* `sync=True` in both modes.
-* `bytes`-only: `bytearray` is rejected by the annotation — keep or widen?
+## Accepted Data
+`bytes`, `bytearray` and `memoryview` — any of them goes straight into
+`handle.write`, nothing is copied first. Text is NOT accepted here: encode it
+with `write_text` (which encodes in memory before touching the disk).
 """

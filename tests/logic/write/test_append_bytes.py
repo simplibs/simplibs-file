@@ -2,7 +2,7 @@ import importlib
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
-from simplibs.exception import AccessError, StateError
+from simplibs.exception import AccessError, StateError, ValidationError
 from simplibs.file.logic.write import append_bytes
 
 MODULE = importlib.import_module("simplibs.file.logic.write.append_bytes")
@@ -188,3 +188,30 @@ def test_append_bytes_direct_sync_flushes_to_disk(tmp_path: Path, monkeypatch) -
     append_bytes(tmp_path / "log.bin", b"x", sync=True)
 
     assert len(calls) == 1
+
+
+# ----------------------------------------------------------------------
+# Accepted data types
+# ----------------------------------------------------------------------
+
+@pytest.mark.parametrize("use_draft", [True, False])
+@pytest.mark.parametrize("data", [bytearray(b"ba"), memoryview(b"mv")])
+def test_append_bytes_accepts_any_bytes_like_object(tmp_path: Path, data, use_draft) -> None:
+    """`bytes`, `bytearray` and `memoryview` are appended as they are."""
+    target = tmp_path / "log.bin"
+    target.write_bytes(b"one")
+
+    append_bytes(target, data, use_draft=use_draft)
+
+    assert target.read_bytes() == b"one" + bytes(data)
+
+
+def test_append_bytes_rejects_text(tmp_path: Path) -> None:
+    """Text is encoded by `append_text`, never guessed here."""
+    target = tmp_path / "log.bin"
+    target.write_bytes(b"one")
+
+    with pytest.raises(ValidationError):
+        append_bytes(target, "text")  # type: ignore[arg-type]
+
+    assert target.read_bytes() == b"one"

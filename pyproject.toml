@@ -58,7 +58,6 @@ Changelog = "https://github.com/simplibs/simplibs-file/blob/main/CHANGELOG.md"
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
-    "pytest-subtests>=0.11",
 ]
 
 [tool.pytest.ini_options]

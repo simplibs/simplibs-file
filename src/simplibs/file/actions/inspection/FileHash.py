@@ -1,6 +1,6 @@
 from simplibs.actions import create_action
 # Outers
-from ...logic.inspect import file_hash
+from ...logic.inspection import file_hash
 
 
 FileHash = create_action(

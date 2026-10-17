@@ -4,17 +4,11 @@ from .is_text_file import is_text_file
 
 
 _DESIGN_NOTES = """
-# inspect — Ask a File About Itself
+# inspection — Ask a File About Itself
 
 `file_size`, `file_hash` (strict: an error card when there is no file) and
 `is_text_file` (a predicate: `False` instead of an error). None of them changes
 anything. Plain imports, no `__all__`.
-
-## Folder Name
-`inspect` is also a standard-library module. Inside this package every import is
-relative or fully qualified, so there is no clash — but a test runner that puts
-the folder's PARENT on `sys.path` would shadow the stdlib module. If that ever
-bites, rename the folder (e.g. `inspection`); nothing else refers to the name.
 
 ## Internal Components Registry
 

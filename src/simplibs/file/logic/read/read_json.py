@@ -58,7 +58,4 @@ _DESIGN_NOTES = """
 
 ## Whole Document in Memory
 Large JSON is not streamed; that is outside this library's scope.
-
-## TODO(test)
-BOM present; empty file (-> `JSONDecodeError` card); directory; invalid UTF-8; `NaN` is accepted by `json.loads` (as in the standard library).
 """

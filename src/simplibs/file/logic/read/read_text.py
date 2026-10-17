@@ -54,7 +54,4 @@ _DESIGN_NOTES = """
 `"\\r\\n"` and lone `"\\r"` become `"\\n"` — the same result as `Path.read_text`,
 so code that moves from `pathlib` keeps behaving. A caller who needs the exact
 bytes of the line endings uses `read_lines(keep_ends=True)` or `read_bytes`.
-
-## TODO(test)
-BOM present / absent; `cp1250`; `errors="replace"`; undecodable bytes -> card; mixed `\\r\\n`/`\\r`/`\\n`.
 """

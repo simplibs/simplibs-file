@@ -72,7 +72,4 @@ cannot (`os.replace` overwrites), so with `use_draft=True` and
 ## Overlap With `SafeFileWriter`
 The writer repeats the folder and directory guard because it is also a public
 class used on its own; both are idempotent and cost one `stat`.
-
-## TODO(test)
-Dangling symlink as the target; read-only existing file; a file in the parent chain.
 """

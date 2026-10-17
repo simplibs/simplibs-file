@@ -61,8 +61,4 @@ exactly as they were.
 
 ## Memory
 The whole file is loaded. For large files use `iter_lines`.
-
-## TODO(test)
-Mixed `\\n` / `\\r\\n` / `\\r`; `\\x0c` and `\\u2028` inside a line; empty file; no final newline;
-`write_lines(p, read_lines(p))` round trip.
 """

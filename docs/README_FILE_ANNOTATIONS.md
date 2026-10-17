@@ -5,7 +5,7 @@ functions, actions and the `SafeFileWriter` declare for their parameters. They l
 `simplibs.file.annotations`, so **your own functions can accept exactly what this library accepts**:
 
 ```python
-from simplibs.file.annotations import ByteCount, EncodingErrors, EncodingName, HashAlgorithm, NewlineMode, WriterMode
+from simplibs.file.annotations import ByteCount, EncodingErrors, EncodingName, HashAlgorithm, NewlineMode, TextCollection, WriterMode
 ```
 
 Each is a plain annotation object — no class to instantiate — and works with `simplibs-validate`
@@ -34,11 +34,15 @@ are a `ValidationError` at construction.
 
 | Kind                | Annotations                                                         | How it decides                                                       |
 |---------------------|---------------------------------------------------------------------|----------------------------------------------------------------------|
-| **Validated type**  | `ByteCount`, `EncodingName`                                         | A base type (`int`, `str`) plus a predicate that checks the **value**. |
+| **Annotated type**  | `ByteCount`, `EncodingName`, `TextCollection`                       | `Annotated[base, predicate]` — a base type (`int`, `str`) plus a predicate that checks the **value**. |
 | **Fixed set**       | `EncodingErrors`, `NewlineMode`, `HashAlgorithm`, `WriterMode`      | A `Literal` — only the listed values exist.                           |
 
 A fixed set fails at the signature on a typo (`errors="ignroe"`) instead of months later, when a
 bad character is finally met.
+
+Both kinds are written so that editors and type checkers understand them: a fixed set is a
+`Literal`, a checked type is `typing.Annotated[base, predicate]` — to the editor it is the plain
+base type, while `@validate_call` reads the predicate from the metadata and checks the value.
 
 ## Where each one is used
 
@@ -49,6 +53,7 @@ bad character is finally met.
 | `NewlineMode`    | `newline`                  | every text writer (`write_text`, `write_lines`, `write_aggregated`, `write_json`, `append_text`), `SafeFileWriter` |
 | `ByteCount`      | `chunk_size`, `sample_size`| `file_hash`, `is_text_file`                                                                  |
 | `HashAlgorithm`  | `algorithm`                | `file_hash`                                                                                  |
+| `TextCollection` | `lines`, `parts`           | `write_lines`, `write_aggregated` — and their actions                                        |
 | `WriterMode`     | `mode`                     | `SafeFileWriter`                                                                             |
 
 > **Rules check by hand.** `IsTextFile` and `ContentIs` are classes, not `@validate_call`
@@ -62,10 +67,11 @@ bad character is finally met.
 
 ## 🧭 Table of Contents
 
-**Validated types**
+**Annotated types**
 
 * [`ByteCount`](#bytecount)
 * [`EncodingName`](#encodingname)
+* [`TextCollection`](#textcollection)
 
 **Fixed sets**
 
@@ -85,7 +91,7 @@ A **positive number of bytes** — a read chunk, a sample size.
 **Definition:**
 
 ```python
-ByteCount = validated_type(int, is_byte_count)
+ByteCount = Annotated[int, is_byte_count]
 ```
 
 **Accepts:** `1`, `4096`, `8192`, `1_048_576` — any `int` greater than zero.
@@ -136,7 +142,7 @@ The **name of a text encoding** Python can both encode **and** decode with.
 **Definition:**
 
 ```python
-EncodingName = validated_type(str, is_text_encoding)
+EncodingName = Annotated[str, is_text_encoding]
 ```
 
 **Accepts:** `"utf-8"`, `"utf-8-sig"`, `"utf-16"`, `"cp1250"`, `"ascii"`, `"latin-1"` — and any
@@ -184,6 +190,60 @@ def is_text_encoding(name: str) -> bool:
 
     # 4. Both directions work
     return True
+```
+
+</details>
+
+[▲ Back to top](#-table-of-contents)
+
+---
+
+### `TextCollection`
+
+A **collection of texts** — lines, fragments — and never a single text.
+
+**Definition:**
+
+```python
+TextCollection = Annotated[Collection[str], is_text_collection]
+```
+
+**Accepts:** `["a", "b"]`, `("a",)`, `{"a"}`, `[]` — any list, tuple or set whose every item is a `str`.
+
+**Rejects:** a bare string (`"abc"`), `bytes`, generators and iterators, collections with a non-`str`
+item (`[1, 2]`, `["a", None]`), `None`.
+
+**Example usage:**
+
+```python
+write_lines("out.txt", ["a", "b"])              # fine
+write_lines("out.txt", "abc")                   # raises ValidationError — not three lines "a", "b", "c"
+WriteAggregated(path="out.txt")(["x", "y"])     # fine
+WriteLines(path="out.txt")([1, 2])              # raises ValidationError
+```
+
+**Why a bare string is rejected.** In Python a string is a collection of one-character strings, so
+a plain `Collection[str]` would accept `"abc"` and write three lines. That is the usual result of
+a forgotten list, and it is stopped at the signature.
+
+**Why not an iterable.** The writers use the items twice and the check walks them once more, so a
+generator would arrive empty. A collection can be walked repeatedly.
+
+<details>
+<summary>🔍 Under the hood</summary>
+
+```python
+def is_text_collection(value: Collection[str]) -> bool:
+    # 1. A text is technically a collection of one-character texts — never what the caller meant
+    if isinstance(value, (str, bytes, bytearray)):
+        return False
+
+    # 2. A real collection: it has a length and can be walked more than once (not a generator)
+    if not isinstance(value, Collection):
+        return False
+
+    # 3. Every item is text
+    return all(isinstance(item, str) for item in value)
 ```
 
 </details>

@@ -1,6 +1,6 @@
 from simplibs.actions import create_action
 # Outers
-from ...logic.inspect import file_size
+from ...logic.inspection import file_size
 
 
 FileSize = create_action(

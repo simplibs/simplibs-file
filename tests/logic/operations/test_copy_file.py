@@ -163,16 +163,19 @@ def test_copy_file_overwrite_replaces_an_existing_destination(tmp_path: Path) ->
     assert _drafts(tmp_path) == []
 
 
-def test_copy_file_dangling_symlink_destination_is_refused_without_overwrite(tmp_path: Path) -> None:
-    """A dangling link is an existing entry; the copy must not silently remove it."""
-    source = _file(tmp_path / "source.bin")
+def test_copy_file_dangling_symlink_destination_creates_the_file_where_the_link_points(tmp_path: Path) -> None:
+    """Content semantics: the destination is normalized, so the dangling link leads to a free path."""
+    source = _file(tmp_path / "source.bin", b"data")
+    missing = tmp_path / "gone.bin"
     link = tmp_path / "dangling.bin"
-    _symlink_or_skip(link, tmp_path / "gone.bin")
+    _symlink_or_skip(link, missing)
 
-    with pytest.raises(AlreadyExistsError):
-        copy_file(source, link)
+    result = copy_file(source, link)
 
+    assert result == missing.resolve()
+    assert missing.read_bytes() == b"data"
     assert link.is_symlink()
+    assert _drafts(tmp_path) == []
 
 
 def test_copy_file_overwrite_false_check_is_a_fail_fast_message_not_a_lock(tmp_path: Path, monkeypatch) -> None:

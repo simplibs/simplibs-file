@@ -85,9 +85,4 @@ by the annotations. The `_validate_call` switch lets the rule skip the second va
 
 ## Empty File
 Text (True) — consistent with `file --mime` and Git.
-
-## TODO(test)
-UTF-8 text; binary with NUL; UTF-16 with `encoding="utf-16"`; the same file with the default encoding -> False;
-a multi-byte character cut at `sample_size`; empty file; directory; missing path; unreadable file; invalid UTF-8
-(`cp1250` text) with the default encoding.
 """

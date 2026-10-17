@@ -137,6 +137,45 @@ def test_replace_with_retry_does_not_retry_other_errors(monkeypatch, error) -> N
     assert sleeps == []
 
 
+@pytest.mark.parametrize("attempts", [0, -3])
+def test_replace_with_retry_makes_at_least_one_attempt(monkeypatch, attempts) -> None:
+    """A nonsensical `attempts` means a single try — never a silent "nothing happened"."""
+    replace, calls = _replace_failing(failures=0)
+    sleeps = _patch_platform(monkeypatch, "nt", replace)
+
+    replace_with_retry(Path("a"), Path("b"), attempts=attempts)
+
+    assert calls == [(Path("a"), Path("b"))]
+    assert sleeps == []
+
+
+@pytest.mark.parametrize("attempts", [0, -3])
+def test_replace_with_retry_with_no_attempts_still_replaces_the_file(tmp_path: Path, attempts) -> None:
+    """Nothing is skipped on the real filesystem either."""
+    source = tmp_path / "draft.tmp"
+    destination = tmp_path / "target.txt"
+    source.write_text("new", encoding="utf-8")
+    destination.write_text("old", encoding="utf-8")
+
+    replace_with_retry(source, destination, attempts=attempts)
+
+    assert destination.read_text(encoding="utf-8") == "new"
+    assert not source.exists()
+
+
+@pytest.mark.parametrize("attempts", [0, 1])
+def test_replace_with_retry_single_try_failure_is_raised(monkeypatch, attempts) -> None:
+    """The one and only try fails for good — on Windows too."""
+    replace, calls = _replace_failing(failures=999)
+    sleeps = _patch_platform(monkeypatch, "nt", replace)
+
+    with pytest.raises(PermissionError):
+        replace_with_retry(Path("a"), Path("b"), attempts=attempts)
+
+    assert len(calls) == 1
+    assert sleeps == []
+
+
 def test_replace_with_retry_passes_paths_through_unchanged(monkeypatch) -> None:
     """Source and destination reach os.replace exactly as given."""
     replace, calls = _replace_failing(failures=0)

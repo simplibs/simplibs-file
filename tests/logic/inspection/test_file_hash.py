@@ -4,7 +4,7 @@ from typing import get_args
 import pytest
 from simplibs.exception import AccessError, NotFoundError, StateError
 from simplibs.file.annotations import HashAlgorithm
-from simplibs.file.logic.inspect import file_hash
+from simplibs.file.logic.inspection import file_hash
 
 
 def _write(path: Path, data: bytes) -> Path:

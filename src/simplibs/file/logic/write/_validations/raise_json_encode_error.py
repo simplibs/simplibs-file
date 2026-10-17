@@ -11,7 +11,7 @@ def raise_json_encode_error(
 
     Args:
         path: The file that was going to be written.
-        caught_exc: The `TypeError` or `ValueError` raised by `json.dumps`.
+        caught_exc: The `TypeError`, `ValueError` or `RecursionError` raised by `json.dumps`.
     """
 
     # 1. Raise structured ConversionError wrapping the serialization failure
@@ -26,7 +26,7 @@ def raise_json_encode_error(
         expected="A JSON-compatible value (dict, list, str, int, float, bool or None, nested freely).",
         how_to_fix=(
             "Convert custom objects to plain values, or pass default=... to convert them.",
-            "Remove circular references and NaN/infinity values.",
+            "Remove circular references and NaN/infinity values, and flatten extremely deep nesting.",
         ),
         exception=type(caught_exc),
     )
@@ -40,6 +40,7 @@ _DESIGN_NOTES = """
 raised while the target file is still untouched — the old `json.dump`
 straight into the handle could leave a half-written file.
 
-## Both `TypeError` and `ValueError`
-Unserializable type -> `TypeError`; circular reference or NaN -> `ValueError`.
+## `TypeError`, `ValueError` and `RecursionError`
+Unserializable type -> `TypeError`; circular reference or NaN -> `ValueError`;
+nesting deeper than the interpreter's recursion limit -> `RecursionError`.
 """

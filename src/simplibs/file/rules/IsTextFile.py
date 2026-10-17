@@ -1,9 +1,9 @@
 from typing import Any
-from simplibs.path.tools import to_path, build_path_rule_exception
+from simplibs.path.tools import build_path_rule_exception, to_path
 from simplibs.rules import Rule
 # Outers
 from ..annotations._helpers import is_byte_count, is_text_encoding
-from ..logic.inspect import is_text_file
+from ..logic.inspection import is_text_file
 # Inners
 from ._validations import raise_rule_param_invalid_error
 
@@ -105,8 +105,4 @@ what was checked, so the verdict is explainable.
 ## Description
 `describe()` returns "text file" — a short noun phrase that containers
 compose into larger texts.
-
-## TODO(test)
-Invalid `sample_size` / `encoding` -> `ParamError`; non-path value -> the shared "not a path" card;
-UTF-16 with `encoding="utf-16"`.
 """

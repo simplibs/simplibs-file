@@ -221,6 +221,33 @@ def test_write_json_serialization_failure_keeps_the_existing_file(
     assert _drafts(tmp_path) == []
 
 
+# Deeper than the recursion limit of every supported Python (3.12+ counts C recursion separately)
+_DEPTH = 100_000
+
+
+def _too_deep() -> list:
+    """A list nested far deeper than the interpreter's recursion limit."""
+    data: list = []
+    for _ in range(_DEPTH):
+        data = [data]
+    return data
+
+
+@pytest.mark.parametrize("use_draft", [True, False])
+def test_write_json_extremely_deep_nesting_is_a_card_not_a_bare_recursion_error(tmp_path: Path, use_draft) -> None:
+    """The recursion limit is reached inside `json.dumps`; the caller still gets a ConversionError."""
+    target = tmp_path / "a.json"
+    target.write_text('{"old": true}', encoding="utf-8")
+
+    with pytest.raises(ConversionError) as info:
+        write_json(target, _too_deep(), use_draft=use_draft)
+
+    assert info.value.error_name == "FILE_JSON_ENCODE_FAILED"
+    assert isinstance(info.value, RecursionError)
+    assert target.read_text(encoding="utf-8") == '{"old": true}'
+    assert _drafts(tmp_path) == []
+
+
 def test_write_json_serialization_failure_does_not_create_the_file(tmp_path: Path) -> None:
     """No file appears at all."""
     target = tmp_path / "a.json"

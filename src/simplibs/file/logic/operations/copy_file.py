@@ -73,8 +73,4 @@ _DESIGN_NOTES = """
 ## Content Semantics
 Source and destination are normalized with `normalize_path` (symlinks
 resolved): the CONTENT is copied to where the destination path leads.
-
-## TODO(test)
-Permissions and mtime arrive; hard link as destination; overwrite of a read-only file on Windows;
-`overwrite=False` race (the check is a fail-fast message, the swap overwrites).
 """

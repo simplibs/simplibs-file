@@ -1,4 +1,4 @@
-from .logic.inspect import (
+from .logic.inspection import (
     file_hash,
     file_size,
     is_text_file,
@@ -36,6 +36,7 @@ from .annotations import (
     EncodingName,
     HashAlgorithm,
     NewlineMode,
+    TextCollection,
     WriterMode,
 )
 
@@ -73,6 +74,7 @@ __all__ = [
     "EncodingName",
     "HashAlgorithm",
     "NewlineMode",
+    "TextCollection",
     "WriterMode",
 ]
 
@@ -103,8 +105,8 @@ Everything from the `logic/` sub-packages (`read`, `write`, `operations`,
 * **Internals** — `_helpers/`, `_validations/` and the `_helpers/` of each domain.
 
 ## Why the Annotations ARE Exported
-`EncodingName`, `EncodingErrors`, `NewlineMode`, `HashAlgorithm`, `ByteCount`
-and `WriterMode` are meant for the caller's own signatures, always used with the
+`EncodingName`, `EncodingErrors`, `NewlineMode`, `HashAlgorithm`, `ByteCount`,
+`TextCollection` and `WriterMode` are meant for the caller's own signatures, always used with the
 functions. `PathLike` is not redefined here — it comes from `simplibs.path`.
 
 ## `__all__`
@@ -137,10 +139,11 @@ sub-packages below export by plain imports.
 | `is_text_file`  | Function       | Checks whether a file's beginning looks like text.              |
 | `SafeFileWriter`| Class          | Context manager for crash-safe writing via draft-and-swap.      |
 | `IGNORE_DRAFTS` | Constant (Set) | Scanner pattern for matching temporary leftover draft files.    |
-| `ByteCount`     | Validated Type | A validated positive integer representing a number of bytes.    |
+| `ByteCount`     | Annotated Type | A validated positive integer representing a number of bytes.    |
 | `EncodingErrors`| Literal Type   | Allowed encoding error handling strategies for read/write.      |
-| `EncodingName`  | Validated Type | A validated string representing a valid Python text encoding.   |
+| `EncodingName`  | Annotated Type | A validated string representing a valid Python text encoding.   |
 | `HashAlgorithm` | Literal Type   | Guaranteed fixed-length hash algorithms from `hashlib`.         |
 | `NewlineMode`   | Literal / None | Deterministic line ending modes for text writing.               |
+| `TextCollection`| Annotated Type | A collection of texts (lines, fragments) — never a bare string. |
 | `WriterMode`    | Literal Type   | Supported open modes for `SafeFileWriter` (`w`, `wb`, `a`, `ab`).|
 """

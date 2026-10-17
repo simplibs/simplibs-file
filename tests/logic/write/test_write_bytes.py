@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
-from simplibs.exception import AccessError, AlreadyExistsError, StateError
+from simplibs.exception import AccessError, AlreadyExistsError, StateError, ValidationError
 from simplibs.file.logic.write import write_bytes
 
 MODULE = importlib.import_module("simplibs.file.logic.write.write_bytes")
@@ -275,3 +275,26 @@ def test_write_bytes_draft_mode_forwards_sync_to_the_writer(tmp_path: Path, monk
     write_bytes(tmp_path / "out.bin", b"x", sync=sync)
 
     assert received == [{"mode": "wb", "sync": sync}]
+
+
+# ----------------------------------------------------------------------
+# Accepted data types
+# ----------------------------------------------------------------------
+
+@pytest.mark.parametrize("use_draft", [True, False])
+@pytest.mark.parametrize("data", [bytearray(b"\x00ba"), memoryview(b"\x00mv"), memoryview(bytearray(b"\x00mba"))])
+def test_write_bytes_accepts_any_bytes_like_object(tmp_path: Path, data, use_draft) -> None:
+    """`bytes`, `bytearray` and `memoryview` are written as they are."""
+    target = tmp_path / "out.bin"
+
+    write_bytes(target, data, use_draft=use_draft)
+
+    assert target.read_bytes() == bytes(data)
+
+
+def test_write_bytes_rejects_text(tmp_path: Path) -> None:
+    """Text is encoded by `write_text`, never guessed here."""
+    with pytest.raises(ValidationError):
+        write_bytes(tmp_path / "out.bin", "text")  # type: ignore[arg-type]
+
+    assert not (tmp_path / "out.bin").exists()

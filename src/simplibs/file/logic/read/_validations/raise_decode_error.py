@@ -58,8 +58,4 @@ byte offset where decoding stopped.
 A streamed read (`iter_lines`) decodes in blocks, so the offset inside the
 exception is relative to the block. The card then omits the number instead of
 printing a wrong one.
-
-## TODO(test)
-Only the byte offset is reported. A line/column position would need a second
-pass over the data; decide while testing whether it is worth it.
 """

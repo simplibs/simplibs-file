@@ -76,8 +76,4 @@ when the whole content matters.
 
 ## Description
 `content: string starting with '#!'`, like the other lenses.
-
-## TODO(test)
-Rule seeing only the head of a large file; BOM; CRLF normalized; undecodable -> False;
-empty file gives `""` (e.g. `Equals("")` passes); invalid `encoding` / `max_bytes` -> `ParamError`.
 """

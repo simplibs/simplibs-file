@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from simplibs.file.logic.inspect import is_text_file
+from simplibs.file.logic.inspection import is_text_file
 
 
 def _write(path: Path, data: bytes) -> Path:

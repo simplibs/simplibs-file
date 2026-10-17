@@ -2,9 +2,9 @@ import importlib
 from pathlib import Path
 import pytest
 from simplibs.exception import AccessError, NotFoundError, StateError
-from simplibs.file.logic.inspect import file_size
+from simplibs.file.logic.inspection import file_size
 
-MODULE = importlib.import_module("simplibs.file.logic.inspect.file_size")
+MODULE = importlib.import_module("simplibs.file.logic.inspection.file_size")
 
 
 def test_file_size_of_empty_file_is_zero(tmp_path: Path) -> None:

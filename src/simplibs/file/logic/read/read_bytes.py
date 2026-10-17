@@ -43,7 +43,4 @@ Every text reader reads bytes here and decodes in memory afterwards.
 Type and existence checks come from `resolve_source_file`; the read itself
 is guarded (a locked file or a permission problem is an `AccessError` card,
 not a bare `PermissionError`).
-
-## TODO(test)
-Locked file on Windows; a file that vanishes between the check and the read.
 """

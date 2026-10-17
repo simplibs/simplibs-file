@@ -139,16 +139,16 @@ src/simplibs/file/
 │   ├── read/             ◄── read_bytes, read_text, read_lines, iter_lines, read_json
 │   ├── write/            ◄── write_bytes, append_bytes, write_text, append_text, write_lines, write_aggregated, write_json
 │   ├── operations/       ◄── copy_file, move_file, rename_file, delete_file, backup_file
-│   ├── inspect/          ◄── file_size, file_hash, is_text_file
+│   ├── inspection/       ◄── file_size, file_hash, is_text_file
 │   ├── safe_writer/      ◄── SafeFileWriter, IGNORE_DRAFTS
 │   └── _common/          ◄── Internal helpers shared by the packages above
 ├── rules/                ◄── Rule classes over files (domain folder) — IsTextFile, SizeIs, ContentIs
 ├── actions/              ◄── Action classes over the functions (domain folder)
-│   ├── read/  write/  destinations/  operations/  inspect/
-└── annotations/          ◄── Shared types — EncodingName, EncodingErrors, NewlineMode, ByteCount, HashAlgorithm, WriterMode
+│   ├── read/  write/  destinations/  operations/  inspection/
+└── annotations/          ◄── Shared types — EncodingName, EncodingErrors, NewlineMode, ByteCount, TextCollection, HashAlgorithm, WriterMode
 ```
 
-Everything in `logic/` and the six public types is importable straight from `simplibs.file`.
+Everything in `logic/` and the seven public types is importable straight from `simplibs.file`.
 `rules` and `actions` are separate domains, imported through their own folders:
 
 ```python
@@ -216,7 +216,7 @@ cross-device moves are atomic — complete, or not there.
 
 ---
 
-## 🔎 `logic/inspect/` — Ask a file about itself
+## 🔎 `logic/inspection/` — Ask a file about itself
 
 None of them changes anything. `file_size` and `file_hash` are strict (a card when there is no
 file); `is_text_file` is a predicate that returns `False` instead.
@@ -227,7 +227,7 @@ file); `is_text_file` is a predicate that returns `False` instead.
 | `file_hash`    | The hex digest of the content, read in chunks (`path`, `algorithm="sha256"`, `chunk_size=1_048_576`).              |
 | `is_text_file` | Whether the beginning looks like text — decodes and contains no NUL (`path`, `sample_size=8192`, `encoding="utf-8"`). |
 
-➡️ [README_FILE_INSPECT](https://github.com/simplibs/simplibs-file/blob/main/docs/logic/README_FILE_INSPECT.md)
+➡️ [README_FILE_INSPECTION](https://github.com/simplibs/simplibs-file/blob/main/docs/logic/README_FILE_INSPECTION.md)
 
 ---
 
@@ -249,7 +249,7 @@ opt out with `use_draft=False`; use it directly when a file is written in severa
 
 Every rule is a `Rule` from [`simplibs-rules`](https://pypi.org/project/simplibs-rules/):
 composable with `&`, `|` and `~`, usable as a scanner filter, as a `@validate_call` annotation
-(`validated_type(Path, IsTextFile())`) and as a pipeline gate (`IsTextFile() >> ReadText()`).
+(`Annotated[Path, IsTextFile()]`) and as a pipeline gate (`IsTextFile() >> ReadText()`).
 They never raise for disk problems — a missing file, a directory or undecodable bytes simply fail
 the rule. Questions about the **path** itself (`IsFile`, `HasSuffix`, `NameIs`, ...) live in
 [`simplibs.path.rules`](https://pypi.org/project/simplibs-path/).
@@ -280,7 +280,7 @@ are offered: `WriteText(path=...)("content")` (the **content** flows) and
 | **write**       | `WriteBytes`, `AppendBytes`, `WriteText`, `AppendText`, `WriteLines`, `WriteAggregated`, `WriteJson`         | content → written `Path`           |
 | **destinations**| `WriteBytesTo`, `AppendBytesTo`, `WriteTextTo`, `AppendTextTo`, `WriteLinesTo`, `WriteAggregatedTo`, `WriteJsonTo` | path → written `Path`        |
 | **operations**  | `CopyFile`, `CopyFileFrom`, `MoveFile`, `RenameFile`, `DeleteFile`, `BackupFile`                             | path → result `Path`               |
-| **inspect**     | `FileSize`, `FileHash`                                                                                       | path → `int` / `str`               |
+| **inspection**  | `FileSize`, `FileHash`                                                                                       | path → `int` / `str`               |
 
 Predicates, `iter_lines` and `SafeFileWriter` have no action: a `Rule` is already a valid
 pipeline step (it becomes a pass-through gate), and a generator or a context manager does not
@@ -298,6 +298,7 @@ fit a one-value-in, one-value-out model.
 | `EncodingErrors` | `"strict"`, `"ignore"`, `"replace"`, `"backslashreplace"`, `"surrogateescape"`, `"surrogatepass"` — the handlers that work in both directions. |
 | `NewlineMode`    | `"\n"`, `"\r\n"`, `"\r"` or `None` for the platform's own line ending.                               |
 | `ByteCount`      | A positive number of bytes (a chunk, a sample). Rejects zero, negatives and `bool`.                   |
+| `TextCollection` | A collection of texts (lines, fragments). Rejects a bare string, a generator and non-text items.      |
 | `HashAlgorithm`  | The twelve fixed-length algorithms of `hashlib` (`md5` ... `blake2s`).                                |
 | `WriterMode`     | The open modes of `SafeFileWriter`: `"w"`, `"wb"`, `"a"`, `"ab"`.                                    |
 

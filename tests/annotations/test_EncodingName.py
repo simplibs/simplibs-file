@@ -1,7 +1,9 @@
+from typing import Annotated, get_args, get_origin
 import pytest
 from simplibs.rules import IsTyping
 from simplibs.validate.testing import assert_type_contract
 from simplibs.file.annotations import EncodingName
+from simplibs.file.annotations._helpers import is_text_encoding
 
 
 @pytest.mark.parametrize("value", ["utf-8", "utf-8-sig", "utf-16", "ascii", "latin-1", "cp1250"])
@@ -28,3 +30,9 @@ def test_encoding_name_contract(subtests) -> None:
         invalid_values=["", "   ", "rot13", "base64", "no-such-encoding", None, 42],
         verbose=False,
     )
+
+
+def test_encoding_name_is_an_annotated_str() -> None:
+    """Spelled as `Annotated`, so editors and type checkers see a plain `str` with a predicate attached."""
+    assert get_origin(EncodingName) is Annotated
+    assert get_args(EncodingName) == (str, is_text_encoding)

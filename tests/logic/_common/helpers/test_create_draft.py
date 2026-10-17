@@ -140,6 +140,16 @@ def test_create_draft_shortens_a_very_long_target_name(tmp_path: Path) -> None:
     assert len(draft.name) == 1 + 100 + 1 + 8 + len(".draft")
 
 
+def test_create_draft_name_of_a_long_multibyte_target_fits_the_byte_limit(tmp_path: Path) -> None:
+    """On Linux and macOS the limit is 255 BYTES; 100 euro signs alone would be 300."""
+    target = tmp_path / ("€" * 100 + ".txt")
+
+    draft = create_draft(target, append=False)
+
+    assert draft.is_file()
+    assert len(os.fsencode(draft.name)) <= 255
+
+
 def test_create_draft_handles_non_ascii_target_name(tmp_path: Path) -> None:
     """A long non-ASCII name still yields a creatable draft."""
     target = tmp_path / ("ž" * 100 + ".txt")

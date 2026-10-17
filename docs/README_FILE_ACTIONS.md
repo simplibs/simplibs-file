@@ -24,7 +24,7 @@ await merge_notes.acall("notes")      # the same, off the event loop
 
 Actions are **not** exported from `simplibs.file` itself — they are a domain of their own,
 imported through `simplibs.file.actions`, which defines `__all__`. Twenty-six actions in
-five groups: **read**, **write**, **destinations**, **operations** and **inspect**.
+five groups: **read**, **write**, **destinations**, **operations** and **inspection**.
 
 ## How an action is built and called
 
@@ -92,7 +92,7 @@ created when missing; a directory at the target is a `StateError`.
 | Group          | Changes the disk?                                                      |
 |----------------|------------------------------------------------------------------------|
 | `read/`        | No — read only.                                                        |
-| `inspect/`     | No — one `stat` or a read of the content.                              |
+| `inspection/`  | No — one `stat` or a read of the content.                              |
 | `write/`       | **Yes** — writes or appends the target file.                           |
 | `destinations/`| **Yes** — same as `write/`.                                            |
 | `operations/`  | **Yes** — copies, moves, deletes or creates a backup.                  |
@@ -156,7 +156,7 @@ pipeline can be awaited the same way.
 * [`MoveFile`](#movefile) · [`RenameFile`](#renamefile)
 * [`DeleteFile`](#deletefile) · [`BackupFile`](#backupfile)
 
-**Inspect** — measure a file
+**Inspection** — measure a file
 
 * [`FileSize`](#filesize) · [`FileHash`](#filehash)
 
@@ -418,7 +418,7 @@ one per line. The counterpart of `ReadLines`.
 * `trailing_newline` (*bool*, default `True`): The last line is terminated too, as POSIX
   tools expect.
 
-**Main input:** `lines` (*Collection[str]*). **Returns:** `Path`.
+**Main input:** `lines` (*TextCollection*). **Returns:** `Path`.
 
 **Example usage:**
 
@@ -432,8 +432,8 @@ ReadLines() >> sorted >> WriteLines(path="sorted.txt")
 **Notes.** Each item is written **without** its own line ending — pass lines as `ReadLines`
 returns them by default. An item that already ends with `"\n"` gets an empty line after it,
 and an item containing `"\n"` becomes more than one line. An **empty collection always gives
-an empty file**, even with `trailing_newline=True`. It takes a `Collection`, not a generator
-(the lines are used twice).
+an empty file**, even with `trailing_newline=True`. It takes a `TextCollection`, not a generator
+(the lines are used twice) and not a bare string.
 
 <details>
 <summary>🔍 Under the hood</summary>
@@ -464,11 +464,11 @@ fragments flowing in with a separator and writes them as one file.
 
 * `path` (*PathLike*, **required**)
 * `separator` (*str*, default `"\n"`): Placed between consecutive fragments.
-* `trailing_newline` (*bool*, default `False`): Add one `"\n"` after the last fragment.
+* `trailing_newline` (*bool*, default `False`): Add one `"\n"` after the last fragment. Never added to an empty `parts`.
 * `encoding`, `errors`, `newline`, `overwrite`, `use_draft`, `sync` — as in
   [`WriteText`](#writetext).
 
-**Main input:** `parts` (*Collection[str]*). **Returns:** `Path`.
+**Main input:** `parts` (*TextCollection*). **Returns:** `Path`.
 
 **Example usage:**
 
@@ -486,7 +486,8 @@ many_to_one = (
 
 **Notes.** The step at the end of an extraction pipeline: several extracted texts become one
 document. Unlike `WriteLines`, the join is **exact** by default — `trailing_newline` is
-opt-in, and the separator can be anything (`"\n---\n"`, `""`).
+opt-in, and the separator can be anything (`"\n---\n"`, `""`). An empty `parts` gives an empty
+file, also with `trailing_newline=True`.
 
 <details>
 <summary>🔍 Under the hood</summary>
@@ -496,7 +497,7 @@ WriteAggregated = create_action(write_aggregated, main_param="parts", class_name
 
 # the function it wraps, in short:
 text = separator.join(parts)
-if trailing_newline:
+if trailing_newline and parts:             # an empty collection stays an empty file
     text += "\n"
 return write_text(path, text, encoding=encoding, errors=errors, newline=newline,
                   overwrite=overwrite, use_draft=use_draft, sync=sync)
@@ -543,7 +544,8 @@ report = CollectFiles() >> ForEach(FileSize()) >> WriteJson(path="out/sizes.json
 ```
 
 **Notes.** The value is serialized **in memory first**: an unserializable value, a circular
-reference, `NaN` with `allow_nan=False` or mixed-type keys with `sort_keys=True` is a
+reference, nesting deeper than the recursion limit, `NaN` with `allow_nan=False` or mixed-type keys
+with `sort_keys=True` is a
 `ConversionError` and the existing file stays intact. `None` is a valid value (the file
 holds `null`).
 
@@ -583,7 +585,7 @@ The first core writer: every other writer ends here.
 * `overwrite` (*bool*, default `True`), `use_draft` (*bool*, default `True`), `sync` (*bool*,
   default `False`).
 
-**Main input:** `data` (*bytes*). **Returns:** `Path`.
+**Main input:** `data` (*bytes | bytearray | memoryview*). **Returns:** `Path`.
 
 **Example usage:**
 
@@ -596,7 +598,7 @@ copy_content = ReadBytes() >> WriteBytes(path="out/copy.bin", overwrite=False)
 **Notes.** With a draft (default) the data goes into a private file next to the target and
 replaces it in one atomic step; a crash leaves the old file exactly as it was. Direct mode
 (`use_draft=False`) truncates the target first and is the documented price of speed.
-Only `bytes` is accepted (not `bytearray`).
+Bytes-like data is accepted (`bytes`, `bytearray`, `memoryview`); text is not — use `WriteText`.
 
 <details>
 <summary>🔍 Under the hood</summary>
@@ -679,7 +681,7 @@ creating the file if it does not exist. The second core writer.
 * `path` (*PathLike*, **required**)
 * `use_draft` (*bool*, default `False`), `sync` (*bool*, default `False`). No `overwrite`.
 
-**Main input:** `data` (*bytes*). **Returns:** `Path`.
+**Main input:** `data` (*bytes | bytearray | memoryview*). **Returns:** `Path`.
 
 **Example usage:**
 
@@ -690,7 +692,8 @@ chunks(b"\x03")                              # stream.bin: b'\x01\x02\x03'
 ```
 
 **Notes.** Collecting binary chunks into one file as they are produced. Appending an empty
-`bytes` to a missing file creates an empty file.
+`bytes` to a missing file creates an empty file. Bytes-like data is accepted (`bytes`, `bytearray`,
+`memoryview`); text is not — use `AppendText`.
 
 <details>
 <summary>🔍 Under the hood</summary>
@@ -772,7 +775,7 @@ WriteTextTo = create_action(write_text, main_param="path", class_name="WriteText
 Wraps [`write_lines`](logic/README_FILE_WRITE.md#write_lines) — writes the configured `lines`
 to the path flowing in. Sibling of [`WriteLines`](#writelines).
 
-**Constructor options:** `lines` (*Collection[str]*, **required**), plus `encoding`,
+**Constructor options:** `lines` (*TextCollection*, **required**), plus `encoding`,
 `errors`, `newline`, `trailing_newline` (`True`), `overwrite`, `use_draft`, `sync`.
 
 **Main input:** `path` (`PathLike`). **Returns:** `Path`.
@@ -803,7 +806,7 @@ Wraps [`write_aggregated`](logic/README_FILE_WRITE.md#write_aggregated) — writ
 configured `parts`, joined, to the path flowing in. Sibling of
 [`WriteAggregated`](#writeaggregated).
 
-**Constructor options:** `parts` (*Collection[str]*, **required**), plus `separator` (`"\n"`),
+**Constructor options:** `parts` (*TextCollection*, **required**), plus `separator` (`"\n"`),
 `encoding`, `errors`, `newline`, `trailing_newline` (`False`), `overwrite`, `use_draft`,
 `sync`.
 
@@ -869,7 +872,7 @@ WriteJsonTo = create_action(write_json, main_param="path", class_name="WriteJson
 Wraps [`write_bytes`](logic/README_FILE_WRITE.md#write_bytes) — writes the configured `data`
 to the path flowing in. Sibling of [`WriteBytes`](#writebytes).
 
-**Constructor options:** `data` (*bytes*, **required**), plus `overwrite` (`True`),
+**Constructor options:** `data` (*bytes | bytearray | memoryview*, **required**), plus `overwrite` (`True`),
 `use_draft` (`True`), `sync` (`False`).
 
 **Main input:** `path` (`PathLike`). **Returns:** `Path`.
@@ -930,7 +933,7 @@ AppendTextTo = create_action(append_text, main_param="path", class_name="AppendT
 Wraps [`append_bytes`](logic/README_FILE_WRITE.md#append_bytes) — appends the configured `data`
 to the path flowing in. Sibling of [`AppendBytes`](#appendbytes).
 
-**Constructor options:** `data` (*bytes*, **required**), plus `use_draft` (`False`),
+**Constructor options:** `data` (*bytes | bytearray | memoryview*, **required**), plus `use_draft` (`False`),
 `sync` (`False`). No `overwrite`.
 
 **Main input:** `path` (`PathLike`). **Returns:** `Path`.
@@ -1244,14 +1247,14 @@ return backup_path
 
 ---
 
-# Inspect
+# Inspection
 
 Read-only. Both need a **regular file** (`NotFoundError`, `StateError`) and raise
 `AccessError` if the OS refuses.
 
 ### `FileSize`
 
-Wraps [`file_size`](logic/README_FILE_INSPECT.md#file_size) — measures the size of the file
+Wraps [`file_size`](logic/README_FILE_INSPECTION.md#file_size) — measures the size of the file
 flowing in, in bytes.
 
 **Constructor options:** none.
@@ -1294,7 +1297,7 @@ except OSError as caught_exc:
 
 ### `FileHash`
 
-Wraps [`file_hash`](logic/README_FILE_INSPECT.md#file_hash) — hashes the content of the file
+Wraps [`file_hash`](logic/README_FILE_INSPECTION.md#file_hash) — hashes the content of the file
 flowing in, reading it in chunks.
 
 **Constructor options:**

@@ -33,8 +33,9 @@ def prepare_destination(
         AccessError: If the OS refuses even the checks.
     """
 
-    # 1. The very same path
-    if destination == source:
+    # 1. The very same path (compared as TEXT: on Windows `Path('a.txt') == Path('A.txt')`,
+    #    which would hide a legitimate case-only rename from step 4.1)
+    if str(destination) == str(source):
         raise_same_file_error(destination, operation)
 
     # 2. Ask the disk about the destination ENTRY (a dangling link counts as existing)
@@ -80,12 +81,15 @@ move).
 ## Case-Only Rename
 On Windows `a.txt` -> `A.txt` is the same file, yet a valid rename. For a
 `"move"` with names that differ only in case, the same-file refusal is skipped.
+Step 1 therefore compares the paths as TEXT: `Path` equality is case-insensitive
+on Windows and would refuse the rename before step 4.1 could allow it.
 
 ## `lexists`
 A dangling symlink at the destination is an existing ENTRY; a plain `exists()`
 would call it free and the later replace would silently remove the link.
+This applies to `move_file` (entry semantics). `copy_file` normalizes its
+destination with `normalize_path`, so a dangling link has already been resolved
+to the free path it points at and never reaches this check as a link.
 
-## TODO(test)
-Hard link as destination; dangling symlink as destination; case-only move on Windows (and on a case-sensitive
-filesystem, where it is a plain different-file move).
+
 """

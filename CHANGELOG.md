@@ -29,9 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 #### Write — content in, a file out
 
 * `write_bytes(path, data, *, overwrite=True, use_draft=True, sync=False)` —
-  the first core writer
+  the first core writer; `data` may be `bytes`, `bytearray` or `memoryview`
 * `append_bytes(path, data, *, use_draft=False, sync=False)` — the second core
-  writer; creates the file when it is missing
+  writer; creates the file when it is missing; `data` may be `bytes`, `bytearray` or `memoryview`
 * `write_text`, `append_text` — encode in memory first, so an unencodable
   character fails before the disk is touched; deterministic defaults (`utf-8`
   without BOM, `"\n"` line endings); a BOM is never appended into the middle
@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 * `write_lines`, `write_aggregated`, `write_json` — one item per line, joined
   fragments with a separator, and a serialized JSON document; all build the
   text and hand it to `write_text`
+* An empty collection gives an empty file in `write_lines` and `write_aggregated`, even with
+  `trailing_newline=True`; a JSON value that cannot be serialized — including nesting deeper than
+  the recursion limit — is a `ConversionError` card, never a bare `RecursionError`
 * The target's folder is created when missing; a directory at the target is a
   `StateError`; `overwrite=False` raises `AlreadyExistsError`
 
@@ -55,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 * `backup_file(path, *, suffix=".bak", timestamp=True, sync=False)` — an atomic
   backup next to the file that never overwrites an older one
 
-#### Inspect — ask a file about itself
+#### Inspection — ask a file about itself
 
 * `file_size(path)` — the size in bytes from one `stat`
 * `file_hash(path, *, algorithm="sha256", chunk_size=1_048_576)` — the hex digest
@@ -71,6 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   exception; a failed block, a failed close and a failed swap all leave the
   original untouched and remove the draft; permissions of the replaced file are
   kept; `sync=True` makes the result survive a power loss
+* The draft name is shortened by characters and by bytes, so a very long or multi-byte file name
+  never exceeds the 255-byte limit of Linux and macOS
 * `IGNORE_DRAFTS` — a scanner `ignore_names` pattern for leftover drafts
   (opt-in: `DEFAULT_IGNORE_NAMES | IGNORE_DRAFTS`)
 
@@ -94,7 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `AppendTextTo`, `WriteLinesTo`, `WriteAggregatedTo`, `WriteJsonTo`
 * Operations: `CopyFile`, `CopyFileFrom`, `MoveFile`, `RenameFile`, `DeleteFile`,
   `BackupFile`
-* Inspect: `FileSize`, `FileHash`
+* Inspection: `FileSize`, `FileHash`
 * Chainable with `>>`, `&` and `|`, awaitable through `acall`, and usable directly
   behind a `Rule` (`IsTextFile() >> ReadText()`)
 
@@ -105,20 +110,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 * `EncodingErrors` — the error handlers that work in both directions
 * `NewlineMode` — `"\n"`, `"\r\n"`, `"\r"` or `None` for the platform's own
 * `ByteCount` — a positive number of bytes (rejects zero, negatives and `bool`)
+* `TextCollection` — a collection of texts for lines and fragments (rejects a bare
+  string, a generator and non-text items)
 * `HashAlgorithm` — the twelve fixed-length algorithms of `hashlib`
 * `WriterMode` — the four open modes `SafeFileWriter` supports
 
 #### Package Layout
 
 * `simplibs.file` exports the functions, `SafeFileWriter`, `IGNORE_DRAFTS` and the
-  six annotations directly; `rules` and `actions` are domain packages with their
+  seven annotations directly; `rules` and `actions` are domain packages with their
   own `__all__`
 * `PathLike` is reused from `simplibs.path`
 
 #### Documentation
 
 * Main `README.md` with quick start, package structure and platform notes
-* Detailed reference for each part: read, write, operations, inspect and
+* Detailed reference for each part: read, write, operations, inspection and
   safe writer under `docs/logic/`, plus rules, actions and annotations, each
   function and class documented with parameters, return values, raised errors,
   examples and the logic behind it
@@ -138,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   public `simplibs.path.tools` toolkit
 * `simplibs-exception` — structured exceptions for every diagnostic
 * `simplibs-validate` — `@validate_call` on every public function and the
-  validated annotation types
+  annotation types written as `typing.Annotated` with a predicate
 * `simplibs-rules` — the `Rule` engine behind `simplibs.file.rules`
 * `simplibs-actions` — the `Action` abstraction behind `simplibs.file.actions`
 

@@ -1,6 +1,6 @@
 from typing import Any, Callable
 from simplibs.exception import ValidationError
-from simplibs.path.tools import to_path, build_not_a_path_exception, build_path_rule_exception
+from simplibs.path.tools import build_not_a_path_exception, build_path_rule_exception, to_path
 from simplibs.rules import AllOf, AnyOf, Compose, Rule, UserRule
 # Outers
 from .._validations import raise_rule_param_invalid_error
@@ -93,7 +93,8 @@ class FilePartIs(Rule):
     ) -> Exception:
 
         # 1. Prepare data
-        error_name = f"FILE_{self._part_name.upper().replace(' ', '_')}_IS_ERROR"
+        error_name_base = f"FILE_{self._part_name.upper().replace(' ', '_')}_IS"
+        error_name = f"{error_name_base}_ERROR"
         expected = f"a file whose {self.describe()}"
 
         # 2. Not a usable path at all
@@ -127,7 +128,7 @@ class FilePartIs(Rule):
 
         # 5. Fallback (the part unexpectedly passed during error construction)
         return ValidationError(
-            error_name=f"{error_name}_UNREACHABLE",
+            error_name=f"{error_name_base}_UNREACHABLE_ERROR",
             label=value_name,
             expected=expected,
             value=value,
@@ -162,9 +163,4 @@ so `None` is an unambiguous marker.
 Same principle as `PathPartIs` / `AllOf` / `ForEach`: `SizeIs(LessThan(10))` on
 a 50-byte file reports that `50` is not `< 10`, labelled `source.size`.
 `exc.value` is therefore the part, not the path.
-
-## TODO(test)
-Rule judged twice (once in `is_valid`, once in `build_exception`) while the file
-changes in between -> the "unreachable" fallback card.
-Contract tests must use `check_value=False`, as for `PathPartIs`.
 """

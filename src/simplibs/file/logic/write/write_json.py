@@ -72,7 +72,7 @@ def write_json(
             allow_nan=allow_nan,
             default=default,
         )
-    except (TypeError, ValueError) as caught_exc:
+    except (TypeError, ValueError, RecursionError) as caught_exc:
         raise_json_encode_error(target, caught_exc)
 
     # 3. A text file ends with a line ending
@@ -119,10 +119,4 @@ complete document.
 JSON is almost always UTF-8, where nothing is unencodable. For another
 encoding an unencodable character is a real error and a `ConversionError`
 card is the right answer.
-
-## TODO(test)
-* Custom object without `default` -> `ConversionError`; with `default` -> works.
-* Circular reference, `NaN`, mixed-type keys with `sort_keys=True` -> `ConversionError`.
-* Existing file intact after every failure above.
-* `indent=None` compact output; `indent="\\t"`.
 """

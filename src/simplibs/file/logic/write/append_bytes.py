@@ -13,7 +13,7 @@ from ._helpers import prepare_write_target
 @validate_call
 def append_bytes(
     path: PathLike,
-    data: bytes,
+    data: bytes | bytearray | memoryview,
     *,
     use_draft: bool = False,
     sync: bool = False,
@@ -22,7 +22,7 @@ def append_bytes(
 
     Args:
         path: The target file. Its folder is created if missing.
-        data: The bytes to add after the existing content.
+        data: The bytes to add after the existing content (`bytes`, `bytearray` or `memoryview`).
         use_draft: If True, the existing content is copied into a draft, the
             data appended there, and the draft swapped in — an interrupted
             append can never damage the old content, but the cost grows with
@@ -85,9 +85,4 @@ all-or-nothing guarantee asks for it with `use_draft=True`.
 
 ## No `overwrite`
 Appending to an existing file is the whole point.
-
-## TODO(test)
-* Appending to a missing file creates it.
-* `use_draft=True` on a file that changes during the append — last writer wins (documented).
-* Direct append of an empty `bytes` creates an empty file.
 """

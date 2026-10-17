@@ -1,9 +1,8 @@
-from collections.abc import Collection
 from pathlib import Path
 from simplibs.path import PathLike
 from simplibs.validate import validate_call
 # Outers
-from ...annotations import EncodingErrors, EncodingName, NewlineMode
+from ...annotations import EncodingErrors, EncodingName, NewlineMode, TextCollection
 # Inners
 from .write_text import write_text
 
@@ -11,7 +10,7 @@ from .write_text import write_text
 @validate_call
 def write_aggregated(
     path: PathLike,
-    parts: Collection[str],
+    parts: TextCollection,
     *,
     separator: str = "\n",
     encoding: EncodingName = "utf-8",
@@ -34,7 +33,7 @@ def write_aggregated(
         encoding: The text encoding.
         errors: How to treat characters the encoding cannot hold.
         newline: The line ending written for every `"\\n"` (`None` for the platform's own).
-        trailing_newline: If True, one `"\\n"` is added after the last fragment. Defaults to False.
+        trailing_newline: If True, one `"\\n"` is added after the last fragment (never to an empty `parts`). Defaults to False.
         overwrite: If False, an existing file raises instead of being replaced.
         use_draft: Atomic draft-and-swap write (default) or an in-place write.
         sync: Force the data to stable storage.
@@ -46,8 +45,8 @@ def write_aggregated(
     # 1. Join the fragments
     text = separator.join(parts)
 
-    # 2. Optionally terminate the last one
-    if trailing_newline:
+    # 2. Optionally terminate the last one (an empty collection stays an empty file)
+    if trailing_newline and parts:
         text += "\n"
 
     # 3. Write it
@@ -80,7 +79,11 @@ library; `write_aggregated` joins arbitrary chunks with an arbitrary separator
 The exact join is the default (the old behaviour); the flag is opt-in, unlike
 `write_lines`.
 
-## TODO(test)
-* Empty `parts` -> empty file (also with `trailing_newline=True` -> a single newline; decide whether that is wanted).
-* `separator=""`.
+## `TextCollection`
+`parts` is a `TextCollection`: a bare `str` is refused (`"abc"` would be joined as
+`a`, `b`, `c`), and so is a generator, which the emptiness test would consume.
+
+## Empty `parts`
+Empty `parts` -> an empty file, also with `trailing_newline=True` (the same rule as
+`write_lines`): the newline terminates the last fragment, and there is none.
 """

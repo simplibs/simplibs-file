@@ -47,7 +47,4 @@ has no honest number. Predicates that must not raise are `is_text_file` and the 
 ## Size, Not Disk Usage
 The logical length of the content, as `ls -l` shows it. Sparse files and
 compression make the space actually used differ.
-
-## TODO(test)
-Empty file -> 0; a file growing between the check and `stat`; a symlink reports the target's size.
 """

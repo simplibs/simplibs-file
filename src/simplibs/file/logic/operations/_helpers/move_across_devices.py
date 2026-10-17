@@ -45,6 +45,5 @@ Recreating a link elsewhere is a different operation (its target may be
 relative); refused with a clear message instead of silently turning a link
 into a file.
 
-## TODO(test)
-Simulated cross-device `os.replace` -> fallback runs; unlink failure after a successful copy.
+
 """

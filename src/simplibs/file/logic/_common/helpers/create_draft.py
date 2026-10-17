@@ -4,13 +4,11 @@ import shutil
 from pathlib import Path
 # Inners
 from .delete_draft import delete_draft
+from .shorten_draft_name import shorten_draft_name
 
 
 # How many random names to try before giving up (a clash is astronomically rare)
 _MAX_ATTEMPTS: int = 100
-
-# The target name is shortened in the draft name so that the result stays under the 255-character limit
-_MAX_BASE_LENGTH: int = 100
 
 
 def create_draft(
@@ -37,7 +35,7 @@ def create_draft(
 
     # 1. Reserve a unique name by creating the file exclusively — no race, no shared name
     flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_BINARY", 0)
-    base_name = target_path.name[:_MAX_BASE_LENGTH]
+    base_name = shorten_draft_name(target_path.name)
     draft_path: Path | None = None
     for _ in range(_MAX_ATTEMPTS):
         candidate = target_path.with_name(f".{base_name}.{secrets.token_hex(4)}.draft")
@@ -91,8 +89,9 @@ it exists (Windows) so no newline translation can happen at this level.
 is always on the same one.
 
 ## 4. Name Length
-`.<name>.<8hex>.draft` adds 16 characters; a long target name is cut to 100
-characters in the draft name so that the 255 limit is never exceeded.
+`.<name>.<8hex>.draft` adds 16 characters; a long target name is cut by
+`shorten_draft_name` (at most 100 characters AND few enough bytes) so that the
+255 limit is never exceeded, also for multi-byte names on Linux and macOS.
 
 ## 5. Append Copies the Content
 Appending to a file safely means: copy it, append to the copy, swap. The cost
@@ -101,9 +100,4 @@ grows with the file size — that is why `append_*` defaults to `use_draft=False
 ## Cleanup
 A failure while copying removes the draft again; the caller never has to
 clean up after a failed `create_draft`.
-
-## TODO(test)
-* Draft name pattern matches `IGNORE_DRAFTS`.
-* A target name of 255 characters still yields a creatable draft.
-* Simulate `FileExistsError` for every candidate -> `FileExistsError` raised.
 """

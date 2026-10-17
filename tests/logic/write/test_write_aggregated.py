@@ -55,11 +55,20 @@ def test_write_aggregated_empty_parts_give_an_empty_file(tmp_path: Path) -> None
     assert target.read_bytes() == b""
 
 
-def test_write_aggregated_empty_parts_with_trailing_newline_give_a_single_newline(tmp_path: Path) -> None:
-    """Current behaviour (the design notes ask to decide whether it is wanted) — differs from write_lines."""
+def test_write_aggregated_empty_parts_with_trailing_newline_still_give_an_empty_file(tmp_path: Path) -> None:
+    """There is no last fragment to terminate — the same rule as `write_lines`."""
     target = tmp_path / "out.txt"
 
     write_aggregated(target, [], trailing_newline=True)
+
+    assert target.read_bytes() == b""
+
+
+def test_write_aggregated_one_empty_part_with_trailing_newline_gives_a_newline(tmp_path: Path) -> None:
+    """A collection with an empty fragment is not an empty collection."""
+    target = tmp_path / "out.txt"
+
+    write_aggregated(target, [""], trailing_newline=True)
 
     assert target.read_bytes() == b"\n"
 

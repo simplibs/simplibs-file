@@ -13,11 +13,23 @@ def _circular() -> str:
     return json.dumps(data)
 
 
+# Deeper than the recursion limit of every supported Python (3.12+ counts C recursion separately)
+_DEPTH = 100_000
+
+
+def _too_deep() -> str:
+    """Serialize a list nested far deeper than the interpreter's recursion limit."""
+    data: list = []
+    for _ in range(_DEPTH):
+        data = [data]
+    return json.dumps(data)
+
+
 def _caught(factory) -> Exception:
     """Produce the real exception json.dumps raises for the given failing call."""
     try:
         factory()
-    except (TypeError, ValueError) as err:
+    except (TypeError, ValueError, RecursionError) as err:
         return err
     raise AssertionError("the call unexpectedly succeeded")
 
@@ -26,6 +38,7 @@ _FAILURES = {
     "unserializable_type": lambda: json.dumps(object()),
     "circular_reference": _circular,
     "nan_not_allowed": lambda: json.dumps(float("nan"), allow_nan=False),
+    "nesting_too_deep": _too_deep,
 }
 
 
@@ -53,7 +66,7 @@ def test_raise_json_encode_error_contract(subtests, factory, path) -> None:
         expected="A JSON-compatible value (dict, list, str, int, float, bool or None, nested freely).",
         how_to_fix=(
             "Convert custom objects to plain values, or pass default=... to convert them.",
-            "Remove circular references and NaN/infinity values.",
+            "Remove circular references and NaN/infinity values, and flatten extremely deep nesting.",
         ),
         exception=type(caught_exc),
         verbose=False,

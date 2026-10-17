@@ -91,9 +91,4 @@ folder after it. Windows cannot fsync a folder; there only the file is synced.
 ## Raises, Does Not Wrap
 The caller (`SafeFileWriter`, `copy_atomically`) knows the context and builds
 the failure card; this helper stays a thin OS step.
-
-## TODO(test)
-* The retry behaviour itself is tested with `replace_with_retry`.
-* A read-only target on Windows keeps the draft read-only after `copymode` — verify the swap fails cleanly.
-* Mode of an existing file is preserved on POSIX.
 """

@@ -57,8 +57,4 @@ The text layer decodes about 8 KB at a time, so an invalid byte can be
 reported while the lines BEFORE it in the same block are not yet yielded. The
 error never appears for a block that is never reached. The card omits the byte
 offset (it would be relative to the block).
-
-## TODO(test)
-* Closing the generator early closes the file.
-* Invalid bytes far beyond the first block: earlier lines are yielded first.
 """

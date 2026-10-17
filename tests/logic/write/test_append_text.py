@@ -23,7 +23,7 @@ def test_append_text_creates_a_missing_file(tmp_path: Path, use_draft) -> None:
 def test_append_text_adds_after_the_existing_content(tmp_path: Path, use_draft) -> None:
     """The old content stays, the new text follows."""
     target = tmp_path / "log.txt"
-    target.write_text("one\n", encoding="utf-8")
+    target.write_bytes(b"one\n")
 
     append_text(target, "two\n", use_draft=use_draft)
 

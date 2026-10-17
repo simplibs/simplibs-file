@@ -54,8 +54,5 @@ mode of a destination being replaced.
 ## Used By
 `copy_file`, `backup_file`, and the cross-device fallback of `move_file`.
 
-## TODO(test)
-Interrupted copy (simulate failure in `copyfile`) leaves no draft and an
-existing destination intact; permissions of the source arrive on the copy;
-modification time is preserved.
+
 """

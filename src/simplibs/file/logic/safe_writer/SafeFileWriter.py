@@ -126,32 +126,35 @@ class SafeFileWriter:
         handle, draft_path = self._handle, self._draft_path
         self._handle, self._draft_path = None, None
 
-        # 2. Close the handle first; remember a failure (a full disk shows up here) instead of raising it
-        close_error: OSError | None = None
-        if handle is not None:
-            try:
-                handle.close()
-            except OSError as caught_exc:
-                close_error = caught_exc
+        # 2. Nothing to finish: `__exit__` without a matching `__enter__`, or a second `__exit__`
+        if handle is None or draft_path is None:
+            return False
 
-        # 3. An exception from the block wins — discard the draft, keep the original, let it propagate untouched
+        # 3. Close the handle first; remember a failure (a full disk shows up here) instead of raising it
+        close_error: OSError | None = None
+        try:
+            handle.close()
+        except OSError as caught_exc:
+            close_error = caught_exc
+
+        # 4. An exception from the block wins — discard the draft, keep the original, let it propagate untouched
         if exc_type is not None:
             delete_draft(draft_path)
             return False
 
-        # 4. The data never fully reached the draft — discard it and say so
+        # 5. The data never fully reached the draft — discard it and say so
         if close_error is not None:
             delete_draft(draft_path)
             raise_file_access_error(self._target_path, self._operation, close_error)
 
-        # 5. Success — swap the draft in; a failed swap leaves the original untouched
+        # 6. Success — swap the draft in; a failed swap leaves the original untouched
         try:
             commit_draft(draft_path, self._target_path, sync=self._sync)
         except OSError as caught_exc:
             delete_draft(draft_path)
             raise_safe_writer_commit_error(self._target_path, caught_exc)
 
-        # 6. Never suppress an exception
+        # 7. Never suppress an exception
         return False
 
     # ----------------------------------------------------------------------
@@ -218,7 +221,9 @@ writers) goes through it unless the caller opts out with `use_draft=False`.
 
 ## 3. Single-Use
 `__exit__` resets the state; entering a used instance again simply creates a
-new draft. The instance is meant for one `with` statement.
+new draft. The instance is meant for one `with` statement. An `__exit__` with
+nothing to finish (called without `__enter__`, or a second time) does nothing
+and suppresses nothing — it never reaches the commit with an empty draft.
 
 ## 4. Text Mode and BOM
 In text append mode Python's own `TextIOWrapper` knows the draft already has
@@ -227,15 +232,4 @@ content and does not write a second BOM for `utf-8-sig`/`utf-16`.
 ## 5. Symlinks
 The path is normalized (symlinks resolved), so writing through a link
 replaces the file the link points to and leaves the link in place.
-
-## TODO(test)
-* Exception in the block -> original intact, no `.draft` left.
-* `handle.close()` raising -> `AccessError`, original intact, draft removed.
-* `commit_draft` raising -> `AccessError`, original intact, draft removed.
-* Open of the draft failing -> draft removed.
-* Two writers of one target at once -> two distinct drafts, last commit wins, no interleaving.
-* Mode of an existing file preserved; new file honours the umask.
-* Append twice with `utf-8-sig` -> one BOM only.
-* Target is a directory -> `StateError`.
-* Entering an instance twice.
 """

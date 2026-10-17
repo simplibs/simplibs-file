@@ -17,11 +17,11 @@ def test_append_bytes_contract(subtests, tmp_path) -> None:
     assert_action(
         subtests,
         AppendBytes(path=target),
-        valid_values=[b"abc", b"", b"\x00\xff\x10"],
-        expected_outputs=[target.resolve()] * 3,
+        valid_values=[b"abc", b"", b"\x00\xff\x10", bytearray(b"ba"), memoryview(b"mv")],
+        expected_outputs=[target.resolve()] * 5,
         invalid_values=[5, None],
         expected_exception_type=ValidationError,
-        expected_input_type=bytes,
+        expected_input_type=bytes | bytearray | memoryview,
         expected_output_type=Path,
         action_class=AppendBytes,
         invalid_init_params=[((), {"path": target, **options}) for options in bad_options]

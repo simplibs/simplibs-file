@@ -16,6 +16,7 @@ def replace_with_retry(
         source: The file to move into place.
         destination: The path it becomes.
         attempts: How many times to try on Windows when the destination is momentarily locked.
+            At least one try is always made, so a value below 1 means a single try.
         delay: Base pause in seconds between attempts; grows with every attempt.
 
     Raises:
@@ -23,15 +24,18 @@ def replace_with_retry(
             outlasts every attempt, a directory at the destination, another device).
     """
 
-    # 1. Try; on Windows a short lock (antivirus, indexer) is retried, anything else fails at once
-    for attempt in range(1, attempts + 1):
+    # 1. Every try but the last: on Windows a short lock (antivirus, indexer) is waited out
+    for attempt in range(1, attempts):
         try:
             os.replace(source, destination)
             return
         except PermissionError:
-            if os.name != "nt" or attempt == attempts:
+            if os.name != "nt":
                 raise
             time.sleep(delay * attempt)
+
+    # 2. The last try — the only one for `attempts <= 1`; its failure is final, anything else fails at once
+    os.replace(source, destination)
 
 
 _DESIGN_NOTES = """
@@ -43,9 +47,12 @@ few milliseconds fails with `PermissionError`. Up to `attempts` tries with a
 growing pause (`delay * attempt`, 0.75 s in total by default) hide it.
 Elsewhere a `PermissionError` is real and raised at once.
 
+## The Last Try Stands Outside the Loop
+The final attempt is made after the loop, so the function can never end without
+either replacing the file or raising — not even for `attempts=0`, which would
+otherwise skip the loop and return silently with nothing done. At least one try
+is always made.
+
 ## Shared
 Extracted from `commit_draft` so that `move_file` retries the same way.
-
-## TODO(test)
-Succeeds on the third try on "nt"; raises after `attempts`; a single attempt on POSIX.
 """

@@ -456,7 +456,7 @@ a destination being replaced.
 *how* the paths were normalized (content semantics for a copy, entry semantics for a move):
 
 ```python
-if destination == source:                                   # 1. the very same path
+if str(destination) == str(source):                         # 1. the very same path
     raise_same_file_error(destination, operation)
 
 exists = os.path.lexists(destination)                       # 2. a dangling link counts as existing

@@ -31,8 +31,4 @@ library. Extend it with a union: `DEFAULT_IGNORE_NAMES | IGNORE_DRAFTS`.
 ## Changed From the Plan
 The plan said `*.draft`; the unique draft names make the narrower pattern
 possible.
-
-## TODO(test)
-Verify the pattern against names produced by `create_draft`, and against
-`essay.draft`, `.notes.draft`, `.a.b.draft` (must not match).
 """

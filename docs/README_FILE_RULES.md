@@ -35,7 +35,7 @@ collect_files("project", include_filter=IsTextFile() & SizeIs(GreaterThan(0)))
 collect_files("project", exclude_filter=SizeIs(GreaterThan(1_000_000)))
 
 # 2. As validation of your own function arguments (simplibs-validate)
-TextFile = validated_type(Path, IsTextFile())
+TextFile = Annotated[Path, IsTextFile()]
 
 @validate_call
 def process(source: TextFile) -> None: ...
@@ -160,6 +160,9 @@ valid utf-8`), so the verdict is explainable. Error name: `IS_TEXT_FILE_ERROR`.
 <summary>🔍 Under the hood</summary>
 
 ```python
+from simplibs.path.tools import build_path_rule_exception, to_path
+
+
 class IsTextFile(Rule):
     __slots__ = ("sample_size", "encoding")
 

@@ -96,8 +96,4 @@ Next to the REAL file: the source is normalized with symlinks resolved.
 ## Race
 `make_unique_path` only looks; between its answer and the swap another process
 could create that name. Accepted (documented), as for `overwrite=False` elsewhere.
-
-## TODO(test)
-Two backups in one second (patch `build_timestamp`); `suffix=""`; invalid suffix; dotfile source (`.env`);
-a very long name (OSError card).
 """

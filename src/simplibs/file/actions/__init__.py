@@ -1,5 +1,5 @@
-from .inspect.FileHash import FileHash
-from .inspect.FileSize import FileSize
+from .inspection.FileHash import FileHash
+from .inspection.FileSize import FileSize
 from .operations.BackupFile import BackupFile
 from .operations.CopyFile import CopyFile
 from .operations.CopyFileFrom import CopyFileFrom

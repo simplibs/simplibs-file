@@ -46,8 +46,4 @@ combine with `IsFile()` when the distinction matters.
 
 ## Strict Twin
 `file_size` is the function that raises a card when there is no file.
-
-## TODO(test)
-`GreaterThan(0)` on empty and non-empty files; `InRange`; a plain callable (wrapped in `UserRule`);
-a directory and a missing path -> False; the card of a failing size says `source.size`.
 """

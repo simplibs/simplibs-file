@@ -72,8 +72,4 @@ different folders hash equal.
 
 ## No `shake_*`
 Variable-length digests need a length; see `HashAlgorithm`.
-
-## TODO(test)
-Empty file (known digests); chunk boundary (`chunk_size` smaller and larger than the file); every algorithm
-against `hashlib`; the hash of a file changes with one byte.
 """

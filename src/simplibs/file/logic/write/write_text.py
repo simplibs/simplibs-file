@@ -70,9 +70,4 @@ The text face of `write_bytes`. Three old defects are gone because of the
 ## BOM Codecs
 `encoding="utf-8-sig"` writes the BOM at the start of the new file — which is
 what that encoding means.
-
-## TODO(test)
-* Unencodable character -> `ConversionError`, existing file intact.
-* `newline` in all four modes.
-* `overwrite=False` on an existing file.
 """

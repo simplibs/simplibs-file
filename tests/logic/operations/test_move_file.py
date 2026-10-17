@@ -3,6 +3,7 @@ import importlib
 import inspect
 import os
 from pathlib import Path
+from types import SimpleNamespace
 import pytest
 from simplibs.exception import AccessError, AlreadyExistsError, NotFoundError, ParamError, StateError
 from simplibs.file.logic.operations import move_file
@@ -149,6 +150,24 @@ def test_move_file_moves_a_dangling_symlink(tmp_path: Path) -> None:
 # ----------------------------------------------------------------------
 # Refusals
 # ----------------------------------------------------------------------
+
+def test_move_file_unreadable_source_entry_is_an_access_error(tmp_path: Path, monkeypatch) -> None:
+    """When the OS refuses even to look at the source, the card says so and nothing is touched."""
+    source = _file(tmp_path / "a.txt", b"precious")
+
+    def refusing_lexists(path):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(MODULE, "os", SimpleNamespace(path=SimpleNamespace(lexists=refusing_lexists)))
+
+    with pytest.raises(AccessError) as info:
+        move_file(source, tmp_path / "b.txt")
+
+    assert info.value.error_name == "FILE_MOVE_FAILED"
+    assert isinstance(info.value, PermissionError)
+    assert source.read_bytes() == b"precious"
+    assert not (tmp_path / "b.txt").exists()
+
 
 def test_move_file_missing_source_raises_not_found(tmp_path: Path) -> None:
     """A missing source is NotFoundError."""

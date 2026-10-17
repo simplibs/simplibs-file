@@ -1,6 +1,6 @@
-# 🔎 `logic/inspect` — Ask a File About Itself
+# 🔎 `logic/inspection` — Ask a File About Itself
 
-The `inspect` package holds the functions that **ask a file a question** — how big it is, what
+The `inspection` package holds the functions that **ask a file a question** — how big it is, what
 its content hashes to, whether it looks like text — without changing anything. Two of them are
 **strict**: they raise a structured card when there is no file to ask. The third is a
 **predicate**: it answers `False` instead of raising.
@@ -12,7 +12,7 @@ from simplibs.file import file_hash, file_size, is_text_file
 Every function accepts its path as a [`PathLike`](../README_FILE_ANNOTATIONS.md) — a non-blank
 `str` or a `Path` — and is wrapped in `@validate_call`, so a blank string or a wrong type is
 rejected with a `ValidationError` before the body runs. Each has an
-[action](../README_FILE_ACTIONS.md#inspect) counterpart for pipelines — except the predicate,
+[action](../README_FILE_ACTIONS.md#inspection) counterpart for pipelines — except the predicate,
 whose counterpart is the [`IsTextFile`](../README_FILE_RULES.md#istextfile) rule.
 
 ## Strict or never-raising
@@ -44,10 +44,11 @@ after. Use these as fail-fast checks and as change detection, not as a lock.
 
 ## A note on the folder name
 
-`inspect` is also the name of a standard-library module. Inside this package every import is
-relative or fully qualified, so there is no clash — but a test runner that puts the folder's
-*parent* on `sys.path` would shadow the stdlib module. If that ever bites, rename the folder
-(for example `inspection`); nothing else refers to the name.
+The folder is called `inspection`, not `inspect`, because `inspect` is the name of a standard-library
+module. A script run from the folder's *parent*, or a test runner that puts that parent on
+`sys.path`, would let a folder called `inspect` shadow the stdlib module and break everything that
+imports it (for example `dataclasses`). The error cards still say `"inspect"` — that is only the name
+of the operation in a text.
 
 ---
 
@@ -57,7 +58,7 @@ relative or fully qualified, so there is no clash — but a test runner that put
 * [`file_hash`](#file_hash)
 * [`is_text_file`](#is_text_file)
 
-[⬅️ Back to main README](../../README.md#-logicinspect--ask-a-file-about-itself)
+[⬅️ Back to main README](../../README.md#-logicinspection--ask-a-file-about-itself)
 
 ---
 
@@ -247,4 +248,4 @@ normal in UTF-16 and UTF-32, so searching the bytes would call such files binary
 
 ---
 
-[⬅️ Back to main README](../../README.md#-logicinspect--ask-a-file-about-itself)
+[⬅️ Back to main README](../../README.md#-logicinspection--ask-a-file-about-itself)

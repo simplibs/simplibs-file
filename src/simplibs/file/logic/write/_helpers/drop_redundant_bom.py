@@ -49,8 +49,4 @@ codec names.
 ## Why Not Needed in `SafeFileWriter`
 Its text handle is a real `TextIOWrapper`, which knows it appends to a
 non-empty file and writes no second BOM. Only the bytes-based path needs this.
-
-## TODO(test)
-`utf-16` / `utf-32` (native-endian BOM) and `utf-8-sig` appended twice; an
-append to an empty existing file keeps the BOM.
 """

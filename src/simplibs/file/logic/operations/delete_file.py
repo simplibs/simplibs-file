@@ -103,8 +103,4 @@ link can be deleted too.
 A file removed by someone else between the check and `unlink` is the same
 outcome the caller wanted with `missing_ok=True`, and an honest "not found"
 otherwise.
-
-## TODO(test)
-Symlink -> target survives; dangling symlink; directory; read-only file with and
-without `force` (Windows); `missing_ok`.
 """

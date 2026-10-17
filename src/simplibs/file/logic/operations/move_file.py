@@ -105,8 +105,4 @@ It always moved files, and the new name says so. `rename_file` stays as an alias
 A same-device rename has no data to flush; a power-loss guarantee for the
 rename itself would need a folder `fsync` that Windows does not offer. The
 parameter would promise more than it can keep.
-
-## TODO(test)
-Symlink moved as a link; dangling symlink; same-device rename; simulated `EXDEV`
-(copy + delete, source kept when the copy fails); case-only rename; `overwrite`.
 """

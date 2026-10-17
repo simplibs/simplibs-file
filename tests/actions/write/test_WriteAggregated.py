@@ -1,10 +1,10 @@
 import asyncio
-from collections.abc import Collection
 from pathlib import Path
 import pytest
 from simplibs.actions.testing import assert_action
 from simplibs.exception import AlreadyExistsError, ConversionError, StateError, ValidationError
 from simplibs.file.actions import WriteAggregated
+from simplibs.file.annotations import TextCollection
 
 
 def test_write_aggregated_contract(subtests, tmp_path) -> None:
@@ -25,9 +25,9 @@ def test_write_aggregated_contract(subtests, tmp_path) -> None:
         WriteAggregated(path=target),
         valid_values=[["a", "b"], [], ["Příliš žluťoučký", "kůň"]],
         expected_outputs=[target.resolve()] * 3,
-        invalid_values=[5, None, [1, 2]],
+        invalid_values=[5, None, [1, 2], "abc"],
         expected_exception_type=ValidationError,
-        expected_input_type=Collection[str],
+        expected_input_type=TextCollection,
         expected_output_type=Path,
         action_class=WriteAggregated,
         invalid_init_params=[((), {"path": target, **options}) for options in bad_options]

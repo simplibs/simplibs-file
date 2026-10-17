@@ -183,6 +183,40 @@ def test_safe_file_writer_instance_can_be_used_again(tmp_path: Path) -> None:
     assert _drafts(tmp_path) == []
 
 
+def test_safe_file_writer_exit_without_enter_does_nothing(tmp_path: Path) -> None:
+    """Called by hand on a fresh writer, `__exit__` has no draft to commit and touches nothing."""
+    target = tmp_path / "out.txt"
+    target.write_text("old", encoding="utf-8")
+    writer = SafeFileWriter(target)
+
+    assert writer.__exit__(None, None, None) is False
+
+    assert target.read_text(encoding="utf-8") == "old"
+    assert _drafts(tmp_path) == []
+
+
+def test_safe_file_writer_exit_without_enter_never_suppresses_an_exception(tmp_path: Path) -> None:
+    """Even with nothing to finish, an exception is left to propagate."""
+    writer = SafeFileWriter(tmp_path / "out.txt")
+
+    assert writer.__exit__(ValueError, ValueError("boom"), None) is False
+
+    assert not (tmp_path / "out.txt").exists()
+
+
+def test_safe_file_writer_second_exit_does_nothing(tmp_path: Path) -> None:
+    """The state is reset after the first `__exit__`; a repeated one cannot commit again."""
+    target = tmp_path / "out.txt"
+    writer = SafeFileWriter(target)
+    with writer as handle:
+        handle.write("new")
+
+    assert writer.__exit__(None, None, None) is False
+
+    assert target.read_text(encoding="utf-8") == "new"
+    assert _drafts(tmp_path) == []
+
+
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
 def test_safe_file_writer_keeps_the_mode_of_the_replaced_file(tmp_path: Path) -> None:
     """A 0o600 file stays 0o600 after being replaced."""
@@ -220,7 +254,7 @@ def test_safe_file_writer_writes_through_a_symlink_and_keeps_the_link(tmp_path: 
 def test_safe_file_writer_append_continues_after_existing_text(tmp_path: Path) -> None:
     """Append copies the old content into the draft and continues after it."""
     target = tmp_path / "log.txt"
-    target.write_text("one\n", encoding="utf-8")
+    target.write_bytes(b"one\n")
 
     with SafeFileWriter(target, mode="a") as handle:
         handle.write("two\n")
@@ -254,14 +288,14 @@ def test_safe_file_writer_append_creates_a_missing_file(tmp_path: Path, mode, da
 def test_safe_file_writer_failed_append_keeps_original(tmp_path: Path) -> None:
     """An exception during append leaves the old content untouched."""
     target = tmp_path / "log.txt"
-    target.write_text("one\n", encoding="utf-8")
+    target.write_bytes(b"one\n")
 
     with pytest.raises(ValueError):
         with SafeFileWriter(target, mode="a") as handle:
             handle.write("half")
             raise ValueError("boom")
 
-    assert target.read_text(encoding="utf-8") == "one\n"
+    assert target.read_bytes() == b"one\n"
     assert _drafts(tmp_path) == []
 
 

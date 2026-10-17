@@ -248,7 +248,7 @@ def test_unreachable_fallback_when_the_part_actually_passes(tmp_path) -> None:
     target.write_bytes(b"12345")
     exc = _Length(GreaterThan(0)).build_exception(target, value_name="source")
     assert isinstance(exc, ValidationError)
-    assert "UNREACHABLE" in exc.error_name
+    assert exc.error_name == "FILE_LENGTH_IS_UNREACHABLE_ERROR"
     assert exc.exception is RuntimeError
 
 
@@ -261,5 +261,5 @@ def test_unreachable_fallback_when_the_file_changes_between_judging_and_the_card
     assert rule.is_valid(target) is False
     exc = rule.build_exception(target, value_name="source")
     assert isinstance(exc, ValidationError)
-    assert "UNREACHABLE" in exc.error_name
+    assert exc.error_name == "FILE_LENGTH_IS_UNREACHABLE_ERROR"
     assert exc.exception is RuntimeError

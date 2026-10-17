@@ -136,9 +136,9 @@ def test_commit_draft_failing_copymode_does_not_stop_the_swap(tmp_path: Path, mo
 # Durability
 # ----------------------------------------------------------------------
 
-def _fake_os(*, name: str, fsync, open=os.open) -> SimpleNamespace:
+def _fake_os(*, name: str, fsync, open=os.open, close=os.close) -> SimpleNamespace:
     """The `os` names commit_draft needs."""
-    return SimpleNamespace(name=name, fsync=fsync, open=open, close=os.close, O_RDONLY=os.O_RDONLY)
+    return SimpleNamespace(name=name, fsync=fsync, open=open, close=close, O_RDONLY=os.O_RDONLY)
 
 
 def test_commit_draft_without_sync_never_calls_fsync(tmp_path: Path, monkeypatch) -> None:
@@ -170,6 +170,73 @@ def test_commit_draft_sync_flushes_the_draft_and_on_posix_the_folder(tmp_path: P
     commit_draft(draft, target, sync=True)
 
     assert len(calls) == (1 if os.name == "nt" else 2)
+    assert target.read_text(encoding="utf-8") == "new"
+
+
+def test_commit_draft_sync_on_posix_opens_syncs_and_closes_the_folder(tmp_path: Path, monkeypatch) -> None:
+    """Persisting the rename: the target's folder is opened read-only, synced, then closed.
+
+    The platform is faked, so this runs on Windows too (where a folder cannot really be opened).
+    """
+    events: list[tuple] = []
+    folder_descriptor = 123456
+
+    def fake_open(path, flags):
+        events.append(("open", Path(path), flags))
+        return folder_descriptor
+
+    monkeypatch.setattr(
+        MODULE,
+        "os",
+        _fake_os(
+            name="posix",
+            fsync=lambda descriptor: events.append(("fsync", descriptor)),
+            open=fake_open,
+            close=lambda descriptor: events.append(("close", descriptor)),
+        ),
+    )
+    target = tmp_path / "target.txt"
+    draft = tmp_path / ".target.txt.abcd1234.draft"
+    draft.write_text("new", encoding="utf-8")
+
+    commit_draft(draft, target, sync=True)
+
+    assert len(events) == 4
+    assert events[0][0] == "fsync"                                   # the draft itself, before the swap
+    assert events[1:] == [
+        ("open", target.parent, os.O_RDONLY),
+        ("fsync", folder_descriptor),
+        ("close", folder_descriptor),
+    ]
+    assert target.read_text(encoding="utf-8") == "new"
+
+
+def test_commit_draft_closes_the_folder_even_when_its_sync_fails(tmp_path: Path, monkeypatch) -> None:
+    """A failing fsync of the folder is ignored — and the descriptor is still released."""
+    closed: list[int] = []
+    folder_descriptor = 123456
+
+    def fake_fsync(descriptor):
+        if descriptor == folder_descriptor:
+            raise OSError("not supported here")
+
+    monkeypatch.setattr(
+        MODULE,
+        "os",
+        _fake_os(
+            name="posix",
+            fsync=fake_fsync,
+            open=lambda path, flags: folder_descriptor,
+            close=closed.append,
+        ),
+    )
+    target = tmp_path / "target.txt"
+    draft = tmp_path / ".target.txt.abcd1234.draft"
+    draft.write_text("new", encoding="utf-8")
+
+    commit_draft(draft, target, sync=True)
+
+    assert closed == [folder_descriptor]
     assert target.read_text(encoding="utf-8") == "new"
 
 

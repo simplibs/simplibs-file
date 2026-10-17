@@ -31,9 +31,4 @@ The `algorithm=` parameter of `file_hash`.
 That set contains `shake_128` and `shake_256`, whose digest needs an explicit
 length — `hexdigest()` without one raises. They are left out instead of
 growing a `length` parameter nobody asked for.
-
-## TODO(test)
-`md5` can be unavailable on FIPS-restricted systems (`hashlib.md5` raises
-`ValueError`). Decide while testing whether `file_hash` wraps that into a card
-or lets it pass.
 """
